@@ -1,18 +1,32 @@
 # Automation Services Platform
 
-A comprehensive platform for managing automation services, client onboarding, proposals, payments, and n8n workflow orchestration.
+[![CI](https://github.com/redmage123/automate_workflows/actions/workflows/ci.yml/badge.svg)](https://github.com/redmage123/automate_workflows/actions/workflows/ci.yml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+A comprehensive multi-tenant SaaS platform for managing automation services, client onboarding, proposals, payments, and n8n workflow orchestration.
+
+## Features
+
+- **Multi-tenant Architecture**: Organization-based data isolation with role-based access control (RBAC)
+- **Authentication & Security**: JWT-based auth with token blacklisting, OWASP Top 10 compliance
+- **Audit Logging**: Comprehensive security event tracking for compliance (OWASP A09)
+- **n8n Integration**: Self-hosted workflow automation with per-client isolation
+- **Stripe Payments**: Subscription and one-time payment processing
+- **Modern Frontend**: React + TypeScript + Tailwind CSS
 
 ## Architecture
 
-- **Frontend**: Next.js 14 (App Router, TypeScript, Tailwind CSS, shadcn/ui)
-- **Backend**: FastAPI (Python 3.11+) with SQLAlchemy 2.0
-- **Database**: PostgreSQL
-- **Auth**: NextAuth.js + JWT
+- **Frontend**: React 18 + TypeScript + Tailwind CSS + Vite
+- **Backend**: FastAPI (Python 3.11+) with SQLAlchemy 2.0 (async)
+- **Database**: PostgreSQL 15+
+- **Cache/Sessions**: Redis 7+
+- **Auth**: JWT with Redis token blacklisting
 - **Payments**: Stripe
 - **Workflows**: n8n (self-hosted)
 - **Storage**: S3-compatible
 - **Jobs/Queue**: Dramatiq + Redis
-- **Deployment**: Docker Compose + Traefik
+- **Deployment**: Docker Compose + Traefik (reverse proxy + SSL)
 
 ## Project Structure
 
@@ -22,15 +36,18 @@ A comprehensive platform for managing automation services, client onboarding, pr
 │   ├── app/
 │   │   ├── api/      # API routers
 │   │   ├── core/     # Config, security, auth
+│   │   ├── dao/      # Data Access Objects
 │   │   ├── models/   # SQLAlchemy models
 │   │   ├── schemas/  # Pydantic schemas
 │   │   ├── services/ # Business logic
+│   │   ├── middleware/ # Request context, security headers
 │   │   └── jobs/     # Background tasks
 │   ├── alembic/      # DB migrations
-│   └── tests/
-├── frontend/         # Next.js frontend
-├── infra/           # Docker Compose, Traefik
-└── rust/            # Future Rust services
+│   └── tests/        # Unit & integration tests (149 tests)
+├── frontend/         # React frontend
+├── docs/             # ADRs, specifications, kanban boards
+├── infra/            # Infrastructure configs
+└── .github/          # CI/CD workflows
 ```
 
 ## Quick Start (Docker Compose - Recommended)
@@ -40,8 +57,8 @@ The fastest way to get started is using Docker Compose, which sets up all servic
 ### 1. Clone and Configure
 
 ```bash
-git clone https://github.com/redmage123/automate.git
-cd automate
+git clone https://github.com/redmage123/automate_workflows.git
+cd automate_workflows
 
 # Copy environment template
 cp .env.example .env
@@ -160,21 +177,65 @@ docker-compose exec backend pytest
 docker-compose down -v
 ```
 
-## Milestones
+## Development Status
 
-- [x] Milestone 1: Repo scaffold, auth flow
-- [ ] Milestone 2: Onboarding and projects
-- [ ] Milestone 3: Proposals + PDFs + payments
-- [ ] Milestone 4: n8n integration
-- [ ] Milestone 5: Project tracker + tickets + notifications
-- [ ] Milestone 6: Deploy and harden
-- [ ] Milestone 7: Rust services (optional)
+### Completed
+- ✅ Project scaffold and infrastructure (Docker Compose, Traefik)
+- ✅ Authentication flow (login, logout, registration)
+- ✅ JWT token management with Redis blacklisting
+- ✅ Multi-tenant organization model
+- ✅ Security headers middleware (OWASP compliance)
+- ✅ Audit logging middleware and service (OWASP A09)
+- ✅ 149 passing tests (unit + integration)
+
+### In Progress
+- 🔄 Rate limiting for auth endpoints
+- 🔄 Email verification flow
+- 🔄 Password reset flow
+
+### Planned
+- [ ] Client onboarding and projects
+- [ ] Proposals + PDF generation + payments
+- [ ] n8n workflow integration
+- [ ] Project tracker + ticketing
+- [ ] Notifications system
+- [ ] Admin dashboard
+
+## Running Tests
+
+```bash
+# Backend tests
+cd backend
+source .venv/bin/activate  # or create venv first
+pip install -e ".[dev]"
+pytest -v
+
+# With coverage
+pytest --cov=app --cov-report=html
+```
 
 ## API Documentation
 
 Once running, visit:
-- Backend API docs: http://localhost:8000/docs
-- Frontend: http://localhost:3000
+- **Swagger UI**: http://localhost:8000/api/docs
+- **ReDoc**: http://localhost:8000/api/redoc
+- **OpenAPI JSON**: http://localhost:8000/api/openapi.json
+
+## Security
+
+This project follows OWASP Top 10 security guidelines:
+- **A01**: Broken Access Control → RBAC + org-scoping on every endpoint
+- **A02**: Cryptographic Failures → Fernet encryption for sensitive data
+- **A03**: Injection → Parameterized queries via SQLAlchemy ORM
+- **A07**: Authentication Failures → JWT with short expiration, bcrypt
+- **A09**: Security Logging → Comprehensive audit logs
+
+## Contributing
+
+1. Create an ADR in `docs/adr/` before implementing new features
+2. Follow TDD: Write tests first
+3. Ensure all tests pass before submitting PR
+4. Follow the code style (black, ruff)
 
 ## License
 
