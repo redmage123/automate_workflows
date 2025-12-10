@@ -59,6 +59,13 @@ class User(Base, PrimaryKeyMixin, TimestampMixin):
     # WHY: is_active allows soft-deletion of users without losing audit trail
     is_active = Column(Boolean, default=True, nullable=False)
 
+    # Email verification status
+    # WHY: email_verified tracks whether the user has confirmed their email address.
+    # This is required for OWASP A07 (Identification and Authentication Failures)
+    # to prevent fake accounts and ensure email ownership before sensitive operations.
+    # Default False requires explicit verification after registration.
+    email_verified = Column(Boolean, default=False, nullable=False)
+
     # Relationships
     organization = relationship("Organization", back_populates="users")
     # TODO: Uncomment when AuditLog model is created

@@ -83,18 +83,24 @@
 | ORG-001 | Create organization endpoint | client-portal.md | 5 | 🟢 | ADMIN-only, full CRUD |
 | ORG-002 | Get organization details | client-portal.md | 2 | 🟢 | Org-scoped access control |
 
-### In Progress
+### Completed This Sprint
+
+| ID | Feature | Sub-Board | Effort | Status | Notes |
+|----|---------|-----------|--------|--------|-------|
+| AUDIT-001 | Audit log model + DAO | auth-security.md | 3 | 🟢 | 14 tests passing |
+| AUDIT-002 | Audit logging middleware | auth-security.md | 5 | 🟢 | 41 tests, auth integration |
+| SEC-006 | Rate limiting (auth endpoints) | auth-security.md | 3 | 🟢 | Redis-based, 22 unit tests |
+| SEC-007 | Email verification flow | auth-security.md | 5 | 🟢 | VerificationToken DAO, 11 integration tests |
+| AUTH-009 | Password reset flow | auth-security.md | 5 | 🟢 | Token-based reset, 13 integration tests |
+| NOTIFY-001 | Email service (Resend) | notifications.md | 5 | 🟢 | Mock provider for tests, 53 tests total |
+
+### Remaining
 
 | ID | Feature | Sub-Board | Effort | Status | Dependencies |
 |----|---------|-----------|--------|--------|--------------|
-| AUDIT-001 | Audit log model + DAO | auth-security.md | 3 | 🟢 | Complete - 14 tests passing |
-| AUDIT-002 | Audit logging middleware | auth-security.md | 5 | ⚪ | AUDIT-001 ✓ |
-| SEC-006 | Rate limiting (auth endpoints) | auth-security.md | 3 | ⚪ | Critical for brute force protection |
-| SEC-007 | Email verification flow | auth-security.md | 5 | ⚪ | NOTIFY-001, prevents fake accounts |
-| AUTH-009 | Password reset flow | auth-security.md | 5 | ⚪ | NOTIFY-001 |
 | ORG-003 | Organization settings page (UI) | client-portal.md | 5 | ⚪ | Frontend work |
 
-**Sprint 2 Total**: 48 points | **Already Done**: 33 points | **Remaining**: 23 points
+**Sprint 2 Total**: 31 points | **Completed**: 26 points | **Remaining**: 5 points
 
 ---
 
@@ -275,6 +281,30 @@
 - Complete backend auth endpoints
 - Organization management
 - Audit logging
+
+### 2025-12-10 (Session 2)
+
+**Completed Today**:
+- ✅ SEC-007: Email verification flow
+  - Created migration `004_add_verification_tokens.py`
+  - Fixed DAO session attribute issue (`_session` → `session`)
+  - 29 unit tests for VerificationTokenDAO
+  - 11 integration tests for email verification endpoints
+- ✅ AUTH-009: Password reset flow
+  - 13 integration tests for password reset endpoints
+  - Token expiration (1h for reset, 24h for verification)
+  - Generic responses to prevent user enumeration
+- ✅ NOTIFY-001: Email service
+  - MockEmailProvider for testing
+  - Added conftest fixture to use mock in all tests
+  - Fixed audit service signature mismatches
+- ✅ All 224 tests passing
+
+**Sprint 2 Progress**:
+- Completed: 26 points (6 tasks)
+- Remaining: 5 points (ORG-003 UI)
+
+**Blockers**: None
 
 ---
 

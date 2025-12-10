@@ -238,3 +238,181 @@ class RegisterResponse(BaseModel):
                 },
             }
         }
+
+
+# ============================================================================
+# Email Verification Schemas
+# ============================================================================
+
+
+class SendVerificationEmailRequest(BaseModel):
+    """
+    Request to send verification email.
+
+    WHY: Allows authenticated users to request a new verification email
+    if they didn't receive the first one or it expired.
+    """
+
+    pass  # No fields needed - uses authenticated user's email
+
+    class Config:
+        json_schema_extra = {"example": {}}
+
+
+class SendVerificationEmailResponse(BaseModel):
+    """Response for sending verification email."""
+
+    message: str = Field(
+        ...,
+        description="Status message",
+    )
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "message": "Verification email sent. Please check your inbox.",
+            }
+        }
+
+
+class VerifyEmailRequest(BaseModel):
+    """
+    Request to verify email with token or code.
+
+    WHY: Supports two verification methods:
+    1. Token from email link (more secure, harder to type)
+    2. 6-digit code (easier on mobile, requires login)
+    """
+
+    token: str | None = Field(
+        default=None,
+        description="Verification token from email link",
+    )
+    code: str | None = Field(
+        default=None,
+        min_length=6,
+        max_length=6,
+        pattern=r"^\d{6}$",
+        description="6-digit verification code",
+    )
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "token": "abc123xyz...",
+            }
+        }
+
+
+class VerifyEmailResponse(BaseModel):
+    """Response for email verification."""
+
+    message: str = Field(
+        ...,
+        description="Status message",
+    )
+    email_verified: bool = Field(
+        ...,
+        description="Whether email is now verified",
+    )
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "message": "Email verified successfully.",
+                "email_verified": True,
+            }
+        }
+
+
+# ============================================================================
+# Password Reset Schemas
+# ============================================================================
+
+
+class ForgotPasswordRequest(BaseModel):
+    """
+    Request to initiate password reset.
+
+    WHY: Email is the only required field - we send reset link to this address.
+    Generic response prevents user enumeration (don't reveal if email exists).
+    """
+
+    email: EmailStr = Field(
+        ...,
+        description="Email address to send reset link to",
+    )
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "email": "user@example.com",
+            }
+        }
+
+
+class ForgotPasswordResponse(BaseModel):
+    """Response for password reset request."""
+
+    message: str = Field(
+        ...,
+        description="Status message (always generic to prevent enumeration)",
+    )
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "message": "If an account exists with this email, you will receive a password reset link.",
+            }
+        }
+
+
+class ResetPasswordRequest(BaseModel):
+    """
+    Request to reset password with token.
+
+    WHY: Token verifies user identity, new passwords must match
+    and meet security requirements.
+    """
+
+    token: str = Field(
+        ...,
+        description="Password reset token from email",
+    )
+    password: str = Field(
+        ...,
+        min_length=8,
+        max_length=100,
+        description="New password",
+    )
+    password_confirm: str = Field(
+        ...,
+        min_length=8,
+        max_length=100,
+        description="New password confirmation",
+    )
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "token": "abc123xyz...",
+                "password": "NewSecurePassword123!",
+                "password_confirm": "NewSecurePassword123!",
+            }
+        }
+
+
+class ResetPasswordResponse(BaseModel):
+    """Response for password reset."""
+
+    message: str = Field(
+        ...,
+        description="Status message",
+    )
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "message": "Password reset successfully. You can now log in with your new password.",
+            }
+        }

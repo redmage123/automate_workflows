@@ -18,7 +18,7 @@ from app.core.exception_handlers import (
     http_exception_handler,
     generic_exception_handler,
 )
-from app.middleware import SecurityHeadersMiddleware, RequestContextMiddleware
+from app.middleware import SecurityHeadersMiddleware, RequestContextMiddleware, RateLimitMiddleware
 from app.api import auth, organizations
 
 
@@ -54,6 +54,13 @@ def create_app() -> FastAPI:
     # Must be added early to ensure context is available for all handlers.
     # OWASP A09 (Security Logging) requires comprehensive request context.
     app.add_middleware(RequestContextMiddleware)
+
+    # Configure Rate Limit Middleware
+    # WHY: Protects authentication endpoints from brute-force and credential
+    # stuffing attacks (OWASP A07). Limits login attempts to prevent password
+    # guessing and registration abuse. Applied after request context to have
+    # access to client IP information for per-client rate limiting.
+    app.add_middleware(RateLimitMiddleware)
 
     # Configure Security Headers
     # WHY: Security headers provide defense in depth by instructing browsers

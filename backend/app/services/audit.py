@@ -281,6 +281,7 @@ class AuditService:
         self,
         email: str,
         user_id: Optional[int] = None,
+        success: bool = True,
     ) -> Optional[AuditLog]:
         """
         Log a password reset request.
@@ -295,6 +296,7 @@ class AuditService:
         Args:
             email: Email address for reset request
             user_id: User ID if email exists
+            success: Whether the reset email was sent (False if user not found/inactive)
 
         Returns:
             Created AuditLog or None if logging failed
@@ -303,7 +305,10 @@ class AuditService:
             action=AuditAction.PASSWORD_RESET_REQUEST,
             resource_type="auth",
             actor_user_id=user_id,
-            extra_data={"email": email},
+            extra_data={
+                "email": email,
+                "success": success,
+            },
         )
 
     async def log_password_reset_complete(
@@ -407,7 +412,8 @@ class AuditService:
     async def log_email_verification_sent(
         self,
         user_id: int,
-        email: str,
+        org_id: Optional[int] = None,
+        email: Optional[str] = None,
     ) -> Optional[AuditLog]:
         """
         Log when an email verification email is sent.
@@ -421,17 +427,23 @@ class AuditService:
 
         Args:
             user_id: ID of the user
-            email: Email address the verification was sent to
+            org_id: User's organization ID for multi-tenant filtering
+            email: Email address the verification was sent to (optional)
 
         Returns:
             Created AuditLog or None if logging failed
         """
+        extra_data = {}
+        if email:
+            extra_data["email"] = email
+
         return await self.log_event(
             action=AuditAction.EMAIL_VERIFICATION_SENT,
             resource_type="user",
             actor_user_id=user_id,
             resource_id=user_id,
-            extra_data={"email": email},
+            org_id=org_id,
+            extra_data=extra_data if extra_data else None,
         )
 
     # =========================================================================

@@ -9,6 +9,7 @@ from app.models.base import Base, TimestampMixin, PrimaryKeyMixin
 from app.models.organization import Organization
 from app.models.user import User, UserRole
 from app.models.audit_log import AuditLog, AuditAction
+from app.models.verification_token import VerificationToken, TokenType
 
 # TODO: Import additional models as they are created
 # from app.models.project import Project, ProjectStatus
@@ -33,5 +34,7 @@ __all__ = [
     "UserRole",
     "AuditLog",
     "AuditAction",
+    "VerificationToken",
+    "TokenType",
     # Add additional models here as they are created
 ]

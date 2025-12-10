@@ -15,6 +15,8 @@ from app.main import app
 from app.models.base import Base
 from app.db.session import get_db
 from app.core import auth as auth_module
+from app.middleware import rate_limiter as rate_limiter_module
+from app.services import email as email_module
 
 
 # Test database URL
@@ -225,3 +227,85 @@ def reset_redis_client():
     yield
     # Reset again after test to clean up
     auth_module._redis_client = None
+
+
+@pytest.fixture(autouse=True)
+def disable_rate_limiting(monkeypatch):
+    """
+    Disable rate limiting for all tests.
+
+    WHY: Rate limiting uses Redis which persists state between tests.
+    Since integration tests run many login attempts rapidly, they would
+    hit rate limits and fail with 429 errors. Disabling rate limiting
+    in tests ensures test isolation and reliable test execution.
+
+    Rate limiting is tested separately in unit tests with mocked Redis.
+
+    Note: This mocks the get_rate_limiter function to return a mock
+    rate limiter that always allows requests.
+    """
+    from unittest.mock import AsyncMock, MagicMock
+
+    # Create a mock rate limiter that always allows
+    mock_result = MagicMock()
+    mock_result.allowed = True
+    mock_result.remaining = 100
+    mock_result.reset_after = 60
+    mock_result.limit = 100
+
+    # Create mock rate limiter instance
+    mock_limiter = MagicMock()
+    mock_limiter.check_rate_limit = AsyncMock(return_value=mock_result)
+    mock_limiter._config = rate_limiter_module.RateLimitConfig()
+
+    async def mock_get_rate_limiter():
+        return mock_limiter
+
+    # Replace the get_rate_limiter function (used by middleware)
+    monkeypatch.setattr(
+        rate_limiter_module,
+        "get_rate_limiter",
+        mock_get_rate_limiter,
+    )
+
+    # Also reset the global rate limiter instance
+    rate_limiter_module._rate_limiter = None
+
+    yield
+
+    # Cleanup
+    rate_limiter_module._rate_limiter = None
+
+
+@pytest.fixture(autouse=True)
+def use_mock_email_provider(monkeypatch):
+    """
+    Use mock email provider for all tests.
+
+    WHY: Tests should not send real emails. The mock provider:
+    - Tracks sent emails for verification in tests
+    - Is always "configured" so it gets used
+    - Doesn't require API keys
+
+    Note: Tests that check MockEmailProvider.sent_emails should
+    call MockEmailProvider.clear_sent_emails() at the start.
+    """
+    # Clear any previous sent emails
+    email_module.MockEmailProvider.clear_sent_emails()
+
+    # Mock the settings to ensure mock provider is always used
+    # by removing the RESEND_API_KEY
+    from app.core import config
+    original_resend_key = getattr(config.settings, 'RESEND_API_KEY', None)
+
+    # Set RESEND_API_KEY to None to force mock provider
+    monkeypatch.setattr(config.settings, 'RESEND_API_KEY', None)
+
+    yield
+
+    # Restore original setting
+    if original_resend_key:
+        monkeypatch.setattr(config.settings, 'RESEND_API_KEY', original_resend_key)
+
+    # Cleanup
+    email_module.MockEmailProvider.clear_sent_emails()
