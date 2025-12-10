@@ -1,0 +1,62 @@
+# WHY: docker-compose.override.yml provides local development overrides,
+# allowing developers to run services with hot-reload, debug ports, and
+# development-specific configuration without modifying docker-compose.yml
+
+version: '3.9'
+
+services:
+  # Backend development overrides
+  backend:
+    # WHY: Volume mounts enable hot-reload for local development
+    volumes:
+      - ./backend:/app
+      - ./backend/.env:/.env:ro  # Mount local .env for development
+    # WHY: Override command to enable auto-reload and single worker
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    environment:
+      # WHY: Enable debug mode for verbose logging
+      DEBUG: "true"
+      # WHY: Use localhost URLs for local development
+      FRONTEND_URL: http://localhost:3000
+      BACKEND_URL: http://localhost:8000
+    ports:
+      # WHY: Expose backend port for direct access (bypassing Traefik)
+      - "8000:8000"
+
+  # Worker development overrides
+  worker:
+    volumes:
+      - ./backend:/app
+      - ./backend/.env:/.env:ro
+    environment:
+      DEBUG: "true"
+
+  # PostgreSQL development overrides
+  postgres:
+    # WHY: Expose PostgreSQL port for local database tools (pgAdmin, DBeaver, etc.)
+    ports:
+      - "5432:5432"
+
+  # Redis development overrides
+  redis:
+    # WHY: Expose Redis port for local redis-cli access
+    ports:
+      - "6379:6379"
+
+  # n8n development overrides
+  n8n:
+    # WHY: Expose n8n port for direct access (bypassing Traefik)
+    ports:
+      - "5678:5678"
+
+  # TODO: Frontend development overrides
+  # frontend:
+  #   volumes:
+  #     - ./frontend:/app
+  #     - /app/node_modules  # WHY: Prevent node_modules sync issues
+  #     - /app/.next         # WHY: Exclude .next build directory
+  #   command: npm run dev
+  #   environment:
+  #     NODE_ENV: development
+  #   ports:
+  #     - "3000:3000"

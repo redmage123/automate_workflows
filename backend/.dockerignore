@@ -1,0 +1,82 @@
+# WHY: .dockerignore excludes unnecessary files from the Docker build context,
+# reducing image size and build time, and preventing sensitive files from
+# being copied into the image.
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.hypothesis/
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Environment files (CRITICAL: Never include in image)
+.env
+.env.*
+*.pem
+*.key
+
+# Logs
+*.log
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Alembic (keep structure, exclude generated migrations in some cases)
+# alembic/versions/*
+
+# Scripts (exclude dev scripts)
+scripts/dev-*.sh
+scripts/test-*.sh

@@ -1,0 +1,257 @@
+# WHY: Docker Compose orchestrates all services in a single configuration,
+# ensuring consistent development and production environments with proper
+# service dependencies and networking.
+
+version: '3.9'
+
+services:
+  # WHY: Traefik acts as a reverse proxy, handling SSL termination, load balancing,
+  # and automatic service discovery. It simplifies deployment and provides
+  # automatic HTTPS via Let's Encrypt (A02: Cryptographic Failures).
+  traefik:
+    image: traefik:v2.10
+    command:
+      # Dashboard
+      - "--api.dashboard=true"
+      - "--api.insecure=false"  # WHY: Secure dashboard access
+      # Docker provider
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"  # WHY: Explicit service exposure prevents accidental exposure
+      # Entry points
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      # Let's Encrypt (production)
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.letsencrypt.acme.email=${TRAEFIK_ACME_EMAIL:-admin@example.com}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      # Logging
+      - "--log.level=${TRAEFIK_LOG_LEVEL:-INFO}"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"  # Traefik dashboard
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"  # WHY: Read-only access to Docker socket for service discovery
+      - "./infra/traefik/letsencrypt:/letsencrypt"      # WHY: Persist SSL certificates
+    restart: unless-stopped
+    networks:
+      - automation-network
+
+  # WHY: PostgreSQL is the primary database, chosen for its ACID compliance,
+  # JSONB support, and mature ecosystem. Version 15+ provides performance
+  # improvements and better indexing.
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-automation_platform}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # WHY: Persist database data
+      - ./infra/postgres/backup:/backup         # WHY: Mount backup directory
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d  # WHY: Run initialization scripts
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"  # WHY: Expose for local development access
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - automation-network
+
+  # WHY: Redis provides fast in-memory storage for sessions, caching, and
+  # background job queues. Persistence with appendonly ensures data durability.
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-}
+    volumes:
+      - redis_data:/data  # WHY: Persist Redis data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"  # WHY: Expose for local development access
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+    networks:
+      - automation-network
+
+  # WHY: Backend service runs the FastAPI application, handling API requests,
+  # authentication, business logic, and database operations.
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # Database
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-automation_platform}
+      # Redis
+      REDIS_URL: redis://:${REDIS_PASSWORD:-}@redis:6379/0
+      # Security
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      JWT_EXPIRATION_MINUTES: ${JWT_EXPIRATION_MINUTES:-1440}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?ENCRYPTION_KEY is required}
+      # URLs
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      BACKEND_URL: ${BACKEND_URL:-http://localhost:8000}
+      # External services
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      # S3
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-}
+      S3_BUCKET: ${S3_BUCKET:-}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      # n8n
+      N8N_DEFAULT_BASE_URL: ${N8N_DEFAULT_BASE_URL:-http://n8n:5678}
+      N8N_DEFAULT_API_KEY: ${N8N_DEFAULT_API_KEY:-}
+      # App config
+      DEBUG: ${DEBUG:-false}
+      PROJECT_NAME: ${PROJECT_NAME:-Automation Platform API}
+    labels:
+      - "traefik.enable=true"
+      # HTTP
+      - "traefik.http.routers.backend.rule=Host(`${API_DOMAIN:-api.localhost}`)"
+      - "traefik.http.routers.backend.entrypoints=websecure"
+      - "traefik.http.routers.backend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.backend.loadbalancer.server.port=8000"
+      # HTTP to HTTPS redirect
+      - "traefik.http.routers.backend-http.rule=Host(`${API_DOMAIN:-api.localhost}`)"
+      - "traefik.http.routers.backend-http.entrypoints=web"
+      - "traefik.http.routers.backend-http.middlewares=redirect-to-https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - automation-network
+
+  # WHY: Worker service handles background jobs (emails, SLA checks, PDF generation)
+  # asynchronously via Dramatiq, preventing API requests from blocking.
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: python -m app.jobs.worker  # TODO: Create worker module
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # Same environment as backend
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-automation_platform}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-}@redis:6379/0
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?ENCRYPTION_KEY is required}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-}
+      S3_BUCKET: ${S3_BUCKET:-}
+      N8N_DEFAULT_BASE_URL: ${N8N_DEFAULT_BASE_URL:-http://n8n:5678}
+      N8N_DEFAULT_API_KEY: ${N8N_DEFAULT_API_KEY:-}
+      DEBUG: ${DEBUG:-false}
+    restart: unless-stopped
+    networks:
+      - automation-network
+
+  # TODO: Frontend service (Next.js 14)
+  # WHY: Next.js provides SSR, excellent DX, and performance optimizations.
+  # Commented out until frontend is created.
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #     dockerfile: Dockerfile
+  #   depends_on:
+  #     - backend
+  #   environment:
+  #     NEXT_PUBLIC_API_URL: https://${API_DOMAIN:-api.localhost}
+  #     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-}
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.frontend.rule=Host(`${DOMAIN:-localhost}`)"
+  #     - "traefik.http.routers.frontend.entrypoints=websecure"
+  #     - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
+  #     - "traefik.http.services.frontend.loadbalancer.server.port=3000"
+  #   restart: unless-stopped
+  #   networks:
+  #     - automation-network
+
+  # WHY: n8n provides workflow automation capabilities, allowing clients
+  # to connect various services and automate business processes.
+  n8n:
+    image: n8nio/n8n:latest
+    environment:
+      # Basic Auth
+      # WHY: Basic auth provides simple access control for n8n admin interface
+      N8N_BASIC_AUTH_ACTIVE: "true"
+      N8N_BASIC_AUTH_USER: ${N8N_USER:-admin}
+      N8N_BASIC_AUTH_PASSWORD: ${N8N_PASSWORD:?N8N_PASSWORD is required}
+      # Networking
+      N8N_HOST: ${N8N_DOMAIN:-n8n.localhost}
+      N8N_PROTOCOL: https
+      N8N_PORT: 5678
+      WEBHOOK_URL: https://${N8N_DOMAIN:-n8n.localhost}/
+      # Database (use PostgreSQL for production)
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_PORT: 5432
+      DB_POSTGRESDB_DATABASE: ${N8N_DB_NAME:-n8n}
+      DB_POSTGRESDB_USER: ${POSTGRES_USER:-postgres}
+      DB_POSTGRESDB_PASSWORD: ${POSTGRES_PASSWORD}
+      # Execution
+      EXECUTIONS_DATA_SAVE_ON_ERROR: all
+      EXECUTIONS_DATA_SAVE_ON_SUCCESS: all
+      EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS: "true"
+    volumes:
+      - n8n_data:/home/node/.n8n  # WHY: Persist n8n data (credentials, workflows)
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.n8n.rule=Host(`${N8N_DOMAIN:-n8n.localhost}`)"
+      - "traefik.http.routers.n8n.entrypoints=websecure"
+      - "traefik.http.routers.n8n.tls.certresolver=letsencrypt"
+      - "traefik.http.services.n8n.loadbalancer.server.port=5678"
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - automation-network
+
+# WHY: Named volumes persist data across container restarts and make backups easier
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  n8n_data:
+    driver: local
+
+# WHY: Custom network allows services to communicate by name and provides
+# isolation from other Docker networks
+networks:
+  automation-network:
+    driver: bridge

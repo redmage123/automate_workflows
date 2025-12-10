@@ -1,0 +1,160 @@
+/**
+ * Global CSS Styles
+ *
+ * WHAT: Entry point for all CSS, importing Tailwind and defining global styles.
+ *
+ * WHY: Tailwind's utility classes handle most styling, but we need base styles
+ * for consistent typography, focus states, and accessibility defaults.
+ *
+ * HOW: Imported in main.tsx, processed by PostCSS with Tailwind plugin.
+ */
+
+@import "tailwindcss";
+
+/**
+ * Custom theme variables
+ * WHY: Define brand colors and custom values using CSS custom properties
+ * for consistency and easy theming.
+ */
+@theme {
+  /* Primary brand colors */
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1e40af;
+  --color-primary-900: #1e3a8a;
+  --color-primary-950: #172554;
+}
+
+/**
+ * Base layer customizations
+ * WHY: Override Tailwind's base styles for project-specific defaults
+ */
+@layer base {
+  /* Use Inter font with fallbacks */
+  html {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+      Roboto, 'Helvetica Neue', Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Ensure body takes full height for layout purposes */
+  body {
+    @apply min-h-screen bg-gray-50 text-gray-900;
+  }
+
+  /* Accessible focus states */
+  *:focus-visible {
+    @apply outline-2 outline-offset-2 outline-primary-500;
+  }
+
+  /* Remove default focus ring for mouse users */
+  *:focus:not(:focus-visible) {
+    @apply outline-none;
+  }
+}
+
+/**
+ * Component layer
+ * WHY: Define reusable component classes that combine utilities.
+ * Note: Tailwind v4 doesn't allow @apply with custom classes defined in
+ * the same file, so we inline the base button styles in each variant.
+ */
+@layer components {
+  /* Primary button */
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-md font-medium
+           transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed
+           bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500;
+  }
+
+  /* Secondary button */
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-md font-medium
+           transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed
+           bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500;
+  }
+
+  /* Danger button */
+  .btn-danger {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-md font-medium
+           transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed
+           bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+  }
+
+  /* Form input styles */
+  .input {
+    @apply block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm
+           focus:border-primary-500 focus:ring-1 focus:ring-primary-500 sm:text-sm;
+  }
+
+  .input-error {
+    @apply block w-full rounded-md border border-red-300 px-3 py-2 shadow-sm
+           focus:border-red-500 focus:ring-1 focus:ring-red-500 sm:text-sm;
+  }
+
+  /* Card component */
+  .card {
+    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-6;
+  }
+
+  /* Badge components */
+  .badge-success {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+           bg-green-100 text-green-800;
+  }
+
+  .badge-warning {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+           bg-yellow-100 text-yellow-800;
+  }
+
+  .badge-error {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+           bg-red-100 text-red-800;
+  }
+
+  .badge-info {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+           bg-blue-100 text-blue-800;
+  }
+}
+
+/**
+ * Utilities layer
+ * WHY: Custom utility classes not provided by Tailwind
+ */
+@layer utilities {
+  /* Hide scrollbar but allow scrolling */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Truncate text with ellipsis */
+  .truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .truncate-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
