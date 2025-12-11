@@ -45,13 +45,23 @@ class Organization(Base, PrimaryKeyMixin, TimestampMixin):
     # preserving audit trails and historical data
     is_active = Column(Boolean, nullable=False, default=True)
 
+    # Stripe integration
+    # WHY: Store Stripe customer ID for payment processing.
+    # Lazy customer creation - only created when first payment is made.
+    stripe_customer_id = Column(
+        String(255),
+        nullable=True,
+        index=True,
+        comment="Stripe customer ID for payment processing"
+    )
+
     # Relationships
     # WHY: Relationships allow easy navigation from organization to its data
     users = relationship("User", back_populates="organization", lazy="dynamic")
+    projects = relationship("Project", back_populates="organization", lazy="dynamic")
+    proposals = relationship("Proposal", back_populates="organization", lazy="dynamic")
+    invoices = relationship("Invoice", back_populates="organization", lazy="dynamic")
     # TODO: Add relationships as models are created:
-    # projects = relationship("Project", back_populates="organization", lazy="dynamic")
-    # proposals = relationship("Proposal", back_populates="organization", lazy="dynamic")
-    # invoices = relationship("Invoice", back_populates="organization", lazy="dynamic")
     # tickets = relationship("Ticket", back_populates="organization", lazy="dynamic")
     # workflow_instances = relationship("WorkflowInstance", back_populates="organization", lazy="dynamic")
 

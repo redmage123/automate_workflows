@@ -77,7 +77,7 @@ Object.defineProperty(window, 'localStorage', {
  * WHY: Some UI components use ResizeObserver for responsive behavior.
  * JSDOM doesn't implement it.
  */
-global.ResizeObserver = class ResizeObserver {
+(globalThis as typeof globalThis & { ResizeObserver: typeof ResizeObserver }).ResizeObserver = class ResizeObserver {
   observe() {}
   unobserve() {}
   disconnect() {}

@@ -9,9 +9,19 @@ instead of manual object creation ensures tests stay consistent when models chan
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from datetime import datetime, date, timedelta
+from decimal import Decimal
+from typing import List, Dict, Any
+
 from app.models.user import User, UserRole
 from app.models.organization import Organization
+from app.models.project import Project, ProjectStatus, ProjectPriority
+from app.models.proposal import Proposal, ProposalStatus
+from app.models.invoice import Invoice, InvoiceStatus
 from app.dao.user import UserDAO
+from app.dao.project import ProjectDAO
+from app.dao.proposal import ProposalDAO
+from app.dao.invoice import InvoiceDAO
 from app.core.auth import hash_password
 
 
@@ -264,3 +274,380 @@ class TestDataBuilder:
     def get_user(self, index: int = 0) -> User:
         """Get user by index."""
         return self.users[index]
+
+
+class ProjectFactory:
+    """
+    Factory for creating Project test instances.
+
+    WHY: Centralizes project creation logic for tests,
+    ensuring consistent test data across all test suites.
+    """
+
+    @staticmethod
+    async def create(
+        session: AsyncSession,
+        name: str = "Test Project",
+        description: Optional[str] = None,
+        status: ProjectStatus = ProjectStatus.DRAFT,
+        priority: ProjectPriority = ProjectPriority.MEDIUM,
+        org_id: Optional[int] = None,
+        organization: Optional[Organization] = None,
+        estimated_hours: Optional[float] = None,
+        actual_hours: Optional[float] = None,
+        start_date: Optional[datetime] = None,
+        due_date: Optional[datetime] = None,
+    ) -> Project:
+        """
+        Create a project for testing.
+
+        Args:
+            session: Database session
+            name: Project name
+            description: Project description
+            status: Project status
+            priority: Project priority
+            org_id: Organization ID
+            organization: Organization instance (will create one if not provided)
+            estimated_hours: Estimated hours
+            actual_hours: Actual hours spent
+            start_date: Start date
+            due_date: Due date
+
+        Returns:
+            Created Project instance
+        """
+        # Create organization if not provided
+        if organization is None and org_id is None:
+            organization = await OrganizationFactory.create(session, name=f"Org for {name}")
+            org_id = organization.id
+        elif organization is not None:
+            org_id = organization.id
+
+        project_dao = ProjectDAO(session)
+        project = await project_dao.create(
+            name=name,
+            description=description or f"Description for {name}",
+            status=status,
+            priority=priority,
+            org_id=org_id,
+            estimated_hours=estimated_hours,
+            actual_hours=actual_hours or 0,
+            start_date=start_date,
+            due_date=due_date,
+        )
+
+        return project
+
+    @staticmethod
+    async def create_in_progress(
+        session: AsyncSession,
+        name: str = "In Progress Project",
+        org_id: Optional[int] = None,
+        organization: Optional[Organization] = None,
+        **kwargs,
+    ) -> Project:
+        """Create an in-progress project."""
+        return await ProjectFactory.create(
+            session=session,
+            name=name,
+            status=ProjectStatus.IN_PROGRESS,
+            org_id=org_id,
+            organization=organization,
+            start_date=datetime.utcnow() - timedelta(days=7),
+            **kwargs,
+        )
+
+    @staticmethod
+    async def create_overdue(
+        session: AsyncSession,
+        name: str = "Overdue Project",
+        org_id: Optional[int] = None,
+        organization: Optional[Organization] = None,
+        **kwargs,
+    ) -> Project:
+        """Create an overdue project (due date in past, not completed)."""
+        return await ProjectFactory.create(
+            session=session,
+            name=name,
+            status=ProjectStatus.IN_PROGRESS,
+            org_id=org_id,
+            organization=organization,
+            start_date=datetime.utcnow() - timedelta(days=30),
+            due_date=datetime.utcnow() - timedelta(days=7),
+            **kwargs,
+        )
+
+
+class ProposalFactory:
+    """
+    Factory for creating Proposal test instances.
+
+    WHY: Centralizes proposal creation logic for tests,
+    ensuring consistent test data across all test suites.
+    """
+
+    @staticmethod
+    async def create(
+        session: AsyncSession,
+        title: str = "Test Proposal",
+        description: Optional[str] = None,
+        status: ProposalStatus = ProposalStatus.DRAFT,
+        project_id: Optional[int] = None,
+        project: Optional[Project] = None,
+        org_id: Optional[int] = None,
+        line_items: Optional[List[Dict[str, Any]]] = None,
+        discount_percent: float = 0,
+        tax_percent: float = 0,
+        valid_until: Optional[datetime] = None,
+        notes: Optional[str] = None,
+        client_notes: Optional[str] = None,
+        terms: Optional[str] = None,
+    ) -> Proposal:
+        """
+        Create a proposal for testing.
+
+        Args:
+            session: Database session
+            title: Proposal title
+            description: Proposal description
+            status: Proposal status
+            project_id: Project ID
+            project: Project instance (will create one if not provided)
+            org_id: Organization ID (derived from project if not provided)
+            line_items: List of line item dicts
+            discount_percent: Discount percentage
+            tax_percent: Tax percentage
+            valid_until: Expiration date
+            notes: Internal notes
+            client_notes: Client-visible notes
+            terms: Terms and conditions
+
+        Returns:
+            Created Proposal instance
+        """
+        # Create project if not provided
+        if project is None and project_id is None:
+            project = await ProjectFactory.create(session, name=f"Project for {title}")
+            project_id = project.id
+            org_id = project.org_id
+        elif project is not None:
+            project_id = project.id
+            org_id = project.org_id
+
+        # Default line items
+        if line_items is None:
+            line_items = [
+                {"description": "Development", "quantity": 10, "unit_price": 100, "amount": 1000},
+                {"description": "Testing", "quantity": 5, "unit_price": 100, "amount": 500},
+            ]
+
+        # Calculate totals
+        subtotal = sum(item.get("amount", 0) for item in line_items)
+        discount_amount = subtotal * (discount_percent / 100)
+        subtotal_after_discount = subtotal - discount_amount
+        tax_amount = subtotal_after_discount * (tax_percent / 100)
+        total = subtotal_after_discount + tax_amount
+
+        proposal_dao = ProposalDAO(session)
+        proposal = await proposal_dao.create(
+            title=title,
+            description=description or f"Description for {title}",
+            status=status,
+            project_id=project_id,
+            org_id=org_id,
+            line_items=line_items,
+            subtotal=subtotal,
+            discount_percent=discount_percent,
+            discount_amount=discount_amount,
+            tax_percent=tax_percent,
+            tax_amount=tax_amount,
+            total=total,
+            valid_until=valid_until or (datetime.utcnow() + timedelta(days=30)),
+            notes=notes,
+            client_notes=client_notes,
+            terms=terms,
+        )
+
+        return proposal
+
+    @staticmethod
+    async def create_sent(
+        session: AsyncSession,
+        title: str = "Sent Proposal",
+        project: Optional[Project] = None,
+        **kwargs,
+    ) -> Proposal:
+        """Create a sent proposal."""
+        proposal = await ProposalFactory.create(
+            session=session,
+            title=title,
+            project=project,
+            **kwargs,
+        )
+        # Update status to sent
+        proposal_dao = ProposalDAO(session)
+        return await proposal_dao.send_proposal(proposal.id, proposal.org_id)
+
+    @staticmethod
+    async def create_approved(
+        session: AsyncSession,
+        title: str = "Approved Proposal",
+        project: Optional[Project] = None,
+        **kwargs,
+    ) -> Proposal:
+        """Create an approved proposal."""
+        proposal = await ProposalFactory.create_sent(
+            session=session,
+            title=title,
+            project=project,
+            **kwargs,
+        )
+        # Update status to approved
+        proposal_dao = ProposalDAO(session)
+        return await proposal_dao.approve_proposal(proposal.id, proposal.org_id)
+
+
+class InvoiceFactory:
+    """
+    Factory for creating Invoice test instances.
+
+    WHY: Centralizes invoice creation logic for tests,
+    ensuring consistent test data across all test suites.
+    """
+
+    @staticmethod
+    async def create(
+        session: AsyncSession,
+        invoice_number: Optional[str] = None,
+        status: InvoiceStatus = InvoiceStatus.DRAFT,
+        proposal_id: Optional[int] = None,
+        proposal: Optional[Proposal] = None,
+        org_id: Optional[int] = None,
+        organization: Optional[Organization] = None,
+        subtotal: Decimal = Decimal("1000.00"),
+        discount_amount: Decimal = Decimal("0"),
+        tax_amount: Decimal = Decimal("80.00"),
+        total: Optional[Decimal] = None,
+        amount_paid: Decimal = Decimal("0"),
+        issue_date: Optional[date] = None,
+        due_date: Optional[date] = None,
+        stripe_payment_intent_id: Optional[str] = None,
+        stripe_checkout_session_id: Optional[str] = None,
+        payment_method: Optional[str] = None,
+        notes: Optional[str] = None,
+    ) -> Invoice:
+        """
+        Create an invoice for testing.
+
+        Args:
+            session: Database session
+            invoice_number: Invoice number (auto-generated if not provided)
+            status: Invoice status
+            proposal_id: Proposal ID
+            proposal: Proposal instance
+            org_id: Organization ID
+            organization: Organization instance (will create one if not provided)
+            subtotal: Subtotal amount
+            discount_amount: Discount amount
+            tax_amount: Tax amount
+            total: Total amount (calculated if not provided)
+            amount_paid: Amount already paid
+            issue_date: Issue date
+            due_date: Due date
+            stripe_payment_intent_id: Stripe PaymentIntent ID
+            stripe_checkout_session_id: Stripe Checkout Session ID
+            payment_method: Payment method
+            notes: Notes
+
+        Returns:
+            Created Invoice instance
+        """
+        # Handle organization
+        if organization is None and org_id is None:
+            organization = await OrganizationFactory.create(session, name="Org for Invoice")
+            org_id = organization.id
+        elif organization is not None:
+            org_id = organization.id
+
+        # Handle proposal
+        if proposal is not None:
+            proposal_id = proposal.id
+            org_id = proposal.org_id
+
+        # Generate invoice number if not provided
+        if invoice_number is None:
+            invoice_dao = InvoiceDAO(session)
+            sequence = await invoice_dao.get_next_invoice_number_sequence(org_id)
+            invoice_number = Invoice.generate_invoice_number(org_id, sequence)
+
+        # Calculate total if not provided
+        if total is None:
+            total = subtotal - discount_amount + tax_amount
+
+        # Default dates
+        if issue_date is None:
+            issue_date = date.today()
+        if due_date is None:
+            due_date = date.today() + timedelta(days=30)
+
+        invoice_dao = InvoiceDAO(session)
+        invoice = await invoice_dao.create(
+            invoice_number=invoice_number,
+            status=status,
+            proposal_id=proposal_id,
+            org_id=org_id,
+            subtotal=subtotal,
+            discount_amount=discount_amount,
+            tax_amount=tax_amount,
+            total=total,
+            amount_paid=amount_paid,
+            issue_date=issue_date,
+            due_date=due_date,
+            stripe_payment_intent_id=stripe_payment_intent_id,
+            stripe_checkout_session_id=stripe_checkout_session_id,
+            payment_method=payment_method,
+            notes=notes,
+        )
+
+        return invoice
+
+    @staticmethod
+    async def create_sent(
+        session: AsyncSession,
+        organization: Optional[Organization] = None,
+        **kwargs,
+    ) -> Invoice:
+        """Create a sent invoice."""
+        invoice = await InvoiceFactory.create(
+            session=session,
+            organization=organization,
+            **kwargs,
+        )
+        invoice_dao = InvoiceDAO(session)
+        return await invoice_dao.send_invoice(invoice.id, invoice.org_id)
+
+    @staticmethod
+    async def create_paid(
+        session: AsyncSession,
+        organization: Optional[Organization] = None,
+        **kwargs,
+    ) -> Invoice:
+        """Create a paid invoice."""
+        invoice = await InvoiceFactory.create_sent(
+            session=session,
+            organization=organization,
+            **kwargs,
+        )
+        invoice_dao = InvoiceDAO(session)
+        return await invoice_dao.mark_paid(invoice.id, invoice.org_id)
+
+    @staticmethod
+    async def create_from_proposal(
+        session: AsyncSession,
+        proposal: Proposal,
+        due_days: int = 30,
+    ) -> Invoice:
+        """Create an invoice from an approved proposal."""
+        invoice_dao = InvoiceDAO(session)
+        return await invoice_dao.create_from_proposal(proposal, due_days=due_days)

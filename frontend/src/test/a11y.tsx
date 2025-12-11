@@ -62,7 +62,8 @@ export async function renderWithA11y(
   ui: ReactElement
 ): Promise<{ renderResult: RenderResult; results: AxeResults }> {
   const renderResult = renderWithProviders(ui);
-  const results = await axe(renderResult.container);
+  // Cast to AxeResults to handle jest-axe/axe-core type version mismatch
+  const results = (await axe(renderResult.container)) as unknown as AxeResults;
   return { renderResult, results };
 }
 
@@ -78,7 +79,8 @@ export async function renderWithA11y(
  * @returns Axe results
  */
 export async function checkA11y(container: Element): Promise<AxeResults> {
-  return axe(container);
+  // Cast to AxeResults to handle jest-axe/axe-core type version mismatch
+  return (await axe(container)) as unknown as AxeResults;
 }
 
 /**

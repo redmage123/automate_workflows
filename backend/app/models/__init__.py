@@ -10,11 +10,11 @@ from app.models.organization import Organization
 from app.models.user import User, UserRole
 from app.models.audit_log import AuditLog, AuditAction
 from app.models.verification_token import VerificationToken, TokenType
+from app.models.project import Project, ProjectStatus, ProjectPriority
+from app.models.proposal import Proposal, ProposalStatus
+from app.models.invoice import Invoice, InvoiceStatus
 
 # TODO: Import additional models as they are created
-# from app.models.project import Project, ProjectStatus
-# from app.models.proposal import Proposal, ProposalStatus
-# from app.models.invoice import Invoice, InvoiceStatus, InvoiceType
 # from app.models.ticket import Ticket, TicketStatus, TicketPriority
 # from app.models.workflow import (
 #     WorkflowTemplate,
@@ -36,5 +36,12 @@ __all__ = [
     "AuditAction",
     "VerificationToken",
     "TokenType",
+    "Project",
+    "ProjectStatus",
+    "ProjectPriority",
+    "Proposal",
+    "ProposalStatus",
+    "Invoice",
+    "InvoiceStatus",
     # Add additional models here as they are created
 ]

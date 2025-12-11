@@ -11,3 +11,19 @@
 
 export * from './common';
 export * from './auth';
+export * from './project';
+export * from './proposal';
+// Exclude formatCurrency from invoice to avoid duplicate export with proposal
+export {
+  type Invoice,
+  type InvoiceCreateRequest,
+  type InvoiceUpdateRequest,
+  type InvoiceListResponse,
+  type InvoiceStats,
+  type InvoiceListParams,
+  type CheckoutRequest,
+  type CheckoutResponse,
+  type CheckoutStatusResponse,
+  type PaymentRecordRequest,
+  INVOICE_STATUS_CONFIG,
+} from './invoice';

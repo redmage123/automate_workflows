@@ -1,8 +1,8 @@
 # Master Kanban Board - Automation Services Platform
 
-**Last Updated:** 2025-12-10
-**Current Sprint**: Sprint 1 (Foundation) - COMPLETE
-**Sprint Velocity**: Achieved 67 points (exceeded target of 48)
+**Last Updated:** 2025-12-11
+**Current Sprint**: Sprint 3 (Projects & Proposals) - COMPLETE
+**Sprint Velocity**: Sprint 1: 67pts | Sprint 2: 26/31pts | Sprint 3: 79pts
 
 ## Legend
 
@@ -104,27 +104,40 @@
 
 ---
 
-## Sprint 3: Projects & Proposals
+## Sprint 3: Projects & Proposals (Current)
 
 **Sprint Goal**: Core business logic for project and proposal management.
 
-| ID | Feature | Sub-Board | Effort | Status | Dependencies |
-|----|---------|-----------|--------|--------|--------------|
-| PROJ-001 | Project model + DAO | client-portal.md | 5 | ⚪ | AUTH-002 |
-| PROJ-002 | Create project endpoint | client-portal.md | 5 | ⚪ | PROJ-001 |
-| PROJ-003 | List projects endpoint | client-portal.md | 3 | ⚪ | PROJ-001 |
-| PROJ-004 | Update project status | client-portal.md | 3 | ⚪ | PROJ-001 |
-| PROJ-005 | Project details page UI | client-portal.md | 5 | ⚪ | PROJ-002 |
-| PROJ-006 | Project list/kanban view | client-portal.md | 8 | ⚪ | PROJ-003 |
-| PROP-001 | Proposal model + DAO | client-portal.md | 5 | ⚪ | PROJ-001 |
-| PROP-002 | Create proposal endpoint | client-portal.md | 5 | ⚪ | PROP-001 |
-| PROP-003 | Update proposal endpoint | client-portal.md | 3 | ⚪ | PROP-001 |
-| PROP-004 | Approve proposal endpoint | client-portal.md | 5 | ⚪ | PROP-001 |
-| PROP-005 | Proposal detail page UI | client-portal.md | 5 | ⚪ | PROP-002 |
-| PROP-006 | Proposal editor UI | client-portal.md | 8 | ⚪ | PROP-002 |
-| ONBOARD-001 | Client onboarding form | client-portal.md | 8 | ⚪ | ORG-001, PROJ-002 |
+**Started**: 2025-12-11
 
-**Sprint 3 Total**: 68 points
+### Backend API (Completed)
+
+| ID | Feature | Sub-Board | Effort | Status | Notes |
+|----|---------|-----------|--------|--------|-------|
+| PROJ-001 | Project model + DAO | client-portal.md | 5 | 🟢 | 23 unit tests, full CRUD |
+| PROJ-002 | Create project endpoint | client-portal.md | 5 | 🟢 | ADMIN only, org-scoped |
+| PROJ-003 | List projects endpoint | client-portal.md | 3 | 🟢 | Pagination, filters, search |
+| PROJ-004 | Update project status | client-portal.md | 3 | 🟢 | State machine validation |
+| PROJ-API | Project API integration tests | Testing | 3 | 🟢 | 22 tests passing |
+| PROP-001 | Proposal model + DAO | client-portal.md | 5 | 🟢 | 34 unit tests, workflow logic |
+| PROP-002 | Create proposal endpoint | client-portal.md | 5 | 🟢 | ADMIN only, auto-totals |
+| PROP-003 | Update proposal endpoint | client-portal.md | 3 | 🟢 | Draft only, recalculate totals |
+| PROP-004 | Approve/Reject/Send proposal | client-portal.md | 5 | 🟢 | Full workflow with expiration |
+| PROP-005 | Revision workflow | client-portal.md | 3 | 🟢 | Version tracking, history |
+| PROP-API | Proposal API integration tests | Testing | 3 | 🟢 | 21 tests passing |
+| ADR-002 | Projects & Proposals ADR | docs/adr | 2 | 🟢 | Architecture documented |
+
+### Frontend UI (Completed)
+
+| ID | Feature | Sub-Board | Effort | Status | Notes |
+|----|---------|-----------|--------|--------|-------|
+| PROJ-005 | Project details page UI | client-portal.md | 5 | 🟢 | Status workflow, hours tracking |
+| PROJ-006 | Project list/kanban view | client-portal.md | 8 | 🟢 | Filters, pagination, stats cards |
+| PROP-006 | Proposal detail page UI | client-portal.md | 5 | 🟢 | Line items, workflow actions |
+| PROP-007 | Proposal editor UI | client-portal.md | 8 | 🟢 | Line item editor, totals calc |
+| ONBOARD-001 | Client onboarding form | client-portal.md | 8 | 🟢 | Multi-step wizard |
+
+**Sprint 3 Total**: 79 points | **Completed**: 79 points | **Remaining**: 0 points
 
 ---
 
@@ -244,13 +257,13 @@
 | Sprint | Focus | Points | Status |
 |--------|-------|--------|--------|
 | Sprint 1 | Foundation | 67 | 🟢 Complete |
-| Sprint 2 | Auth & Orgs | 48 | ⚪ Next |
-| Sprint 3 | Projects & Proposals | 68 | ⚪ Planned |
+| Sprint 2 | Auth & Orgs | 31 | 🟡 26/31 (UI remaining) |
+| Sprint 3 | Projects & Proposals | 79 | 🟢 Complete |
 | Sprint 4 | Billing | 71 | ⚪ Planned |
 | Sprint 5 | Workflows | 80 | ⚪ Planned |
 | Sprint 6 | Ticketing | 53 | ⚪ Planned |
 | Sprint 7 | Admin & Analytics | 73 | ⚪ Planned |
-| **MVP Total** | | **460 points** | ~4-5 months |
+| **MVP Total** | | **454 points** | ~4-5 months |
 
 ---
 
@@ -305,6 +318,82 @@
 - Remaining: 5 points (ORG-003 UI)
 
 **Blockers**: None
+
+### 2025-12-11 (Sprint 3 Backend Complete)
+
+**Completed Today**:
+- ✅ ADR-002: Projects & Proposals architecture decision record
+- ✅ PROJ-001: Project model + DAO (23 unit tests)
+  - Full CRUD operations
+  - Status workflow (LEAD → PROPOSAL_SENT → APPROVED → IN_PROGRESS → COMPLETED)
+  - Org-scoping, priority, date handling
+- ✅ PROJ-002/003/004: Project API endpoints
+  - Create, list (with pagination/filters/search), get, update, delete, status update
+  - 22 integration tests
+  - Audit logging integration
+- ✅ PROP-001: Proposal model + DAO (34 unit tests)
+  - Full CRUD + workflow operations
+  - Status workflow (DRAFT → SENT → VIEWED → APPROVED/REJECTED/REVISED)
+  - Line items with JSONB, automatic total calculation
+  - Version history for revisions
+- ✅ PROP-002/003/004/005: Proposal API endpoints
+  - Create, list, get, update, delete, send, view, approve, reject, revise
+  - 21 integration tests
+  - Proper AuditService integration (log_create, log_update, log_delete)
+- ✅ Fixed SQLite/PostgreSQL incompatibility for JSONB columns in test config
+- ✅ Fixed AuditService method signatures in API routers
+
+**Test Results**:
+- 100 new tests added and passing
+  - 23 Project DAO unit tests
+  - 34 Proposal DAO unit tests
+  - 22 Project API integration tests
+  - 21 Proposal API integration tests
+
+**Sprint 3 Progress**:
+- Backend complete: 45 points (12 tasks)
+- Frontend remaining: 34 points (5 tasks)
+
+**Blockers**: None
+
+### 2025-12-11 (Sprint 3 Complete)
+
+**Completed Today**:
+- ✅ PROJ-005: Project details page UI (status workflow, hours tracking, related proposals)
+- ✅ PROJ-006: Project list page (stats cards, filters, pagination, search)
+- ✅ PROP-006: Proposal detail page UI (line items, workflow actions, timeline)
+- ✅ PROP-007: Proposal editor UI (line item editor, totals calculation, revisions)
+- ✅ ONBOARD-001: Client onboarding wizard (multi-step form, project + proposal creation)
+- ✅ Fixed test infrastructure errors (a11y.tsx, setup.ts, vite.config.ts, utils.tsx)
+- ✅ Created API services for projects and proposals
+- ✅ Added all routes and navigation
+
+**Frontend Files Created**:
+- `src/pages/projects/ProjectsPage.tsx` - Project list with filters
+- `src/pages/projects/ProjectDetailPage.tsx` - Project detail view
+- `src/pages/projects/ProjectFormPage.tsx` - Create/edit project form
+- `src/pages/proposals/ProposalsPage.tsx` - Proposal list with filters
+- `src/pages/proposals/ProposalDetailPage.tsx` - Proposal detail view
+- `src/pages/proposals/ProposalFormPage.tsx` - Create/edit/revise proposal form
+- `src/pages/onboarding/ClientOnboardingPage.tsx` - Multi-step onboarding wizard
+- `src/services/projects.ts` - Project API client
+- `src/services/proposals.ts` - Proposal API client
+- `src/types/project.ts` - Project types and configs
+- `src/types/proposal.ts` - Proposal types and configs
+
+**Sprint 3 Final Stats**:
+- Backend: 45 points (12 tasks, 100 tests)
+- Frontend: 34 points (5 tasks)
+- Total: 79 points completed
+- All lint, type-check, and build passing
+
+**Blockers**: None
+
+**Next Sprint (Sprint 4)**:
+- Stripe integration
+- Invoice model + DAO
+- Payment checkout flow
+- PDF generation
 
 ---
 

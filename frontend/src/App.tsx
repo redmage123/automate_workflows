@@ -20,12 +20,25 @@ import { useAuthStore } from './store';
 // Layout components (to be created)
 import MainLayout from './components/layout/MainLayout';
 
-// Page components (to be created)
+// Page components
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import Dashboard from './pages/dashboard/Dashboard';
+import OrganizationSettings from './pages/settings/OrganizationSettings';
 import NotFound from './pages/NotFound';
+
+// Project pages
+import { ProjectsPage, ProjectDetailPage, ProjectFormPage } from './pages/projects';
+
+// Proposal pages
+import { ProposalsPage, ProposalDetailPage, ProposalFormPage } from './pages/proposals';
+
+// Onboarding pages
+import { ClientOnboardingPage } from './pages/onboarding';
+
+// Invoice pages
+import { InvoicesPage, InvoiceDetailPage } from './pages/invoices';
 
 /**
  * React Query client
@@ -133,14 +146,31 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route element={<MainLayout />}>
               <Route path="/dashboard" element={<Dashboard />} />
-              {/* Add more protected routes here */}
-              {/* <Route path="/projects" element={<ProjectList />} /> */}
-              {/* <Route path="/projects/:id" element={<ProjectDetail />} /> */}
-              {/* <Route path="/proposals" element={<ProposalList />} /> */}
-              {/* <Route path="/invoices" element={<InvoiceList />} /> */}
+              <Route path="/settings" element={<OrganizationSettings />} />
+
+              {/* Project routes */}
+              <Route path="/projects" element={<ProjectsPage />} />
+              <Route path="/projects/new" element={<ProjectFormPage />} />
+              <Route path="/projects/:id" element={<ProjectDetailPage />} />
+              <Route path="/projects/:id/edit" element={<ProjectFormPage />} />
+
+              {/* Proposal routes */}
+              <Route path="/proposals" element={<ProposalsPage />} />
+              <Route path="/proposals/new" element={<ProposalFormPage />} />
+              <Route path="/proposals/:id" element={<ProposalDetailPage />} />
+              <Route path="/proposals/:id/edit" element={<ProposalFormPage />} />
+              <Route path="/proposals/:id/revise" element={<ProposalFormPage />} />
+
+              {/* Onboarding routes */}
+              <Route path="/onboarding" element={<ClientOnboardingPage />} />
+
+              {/* Invoice routes */}
+              <Route path="/invoices" element={<InvoicesPage />} />
+              <Route path="/invoices/:id" element={<InvoiceDetailPage />} />
+
+              {/* Future routes */}
               {/* <Route path="/workflows" element={<WorkflowList />} /> */}
               {/* <Route path="/tickets" element={<TicketList />} /> */}
-              {/* <Route path="/settings" element={<Settings />} /> */}
             </Route>
           </Route>
 

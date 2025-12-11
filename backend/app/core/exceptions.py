@@ -236,6 +236,21 @@ class BusinessRuleViolation(AppException):
     default_message = "Business rule violation"
 
 
+class InvalidStateTransitionError(BusinessRuleViolation):
+    """
+    Raised when an invalid state transition is attempted.
+
+    WHY: State machines (project status, proposal workflow) have valid
+    transitions. Attempting invalid transitions (e.g., approving a draft
+    proposal) should fail with a clear error message.
+
+    HTTP Status: 400 Bad Request
+    """
+
+    status_code = 400
+    default_message = "Invalid state transition"
+
+
 class InsufficientPermissionsError(AuthorizationError):
     """
     Raised when user's role doesn't allow an action.

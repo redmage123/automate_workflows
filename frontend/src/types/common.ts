@@ -32,15 +32,30 @@ export type UserRole = (typeof UserRole)[keyof typeof UserRole];
  * Status transitions are validated on the backend.
  */
 export const ProjectStatus = {
-  DRAFT: 'DRAFT',
-  PROPOSED: 'PROPOSED',
-  APPROVED: 'APPROVED',
-  IN_PROGRESS: 'IN_PROGRESS',
-  COMPLETED: 'COMPLETED',
-  ARCHIVED: 'ARCHIVED',
+  DRAFT: 'draft',
+  PROPOSAL_SENT: 'proposal_sent',
+  APPROVED: 'approved',
+  IN_PROGRESS: 'in_progress',
+  ON_HOLD: 'on_hold',
+  COMPLETED: 'completed',
+  CANCELLED: 'cancelled',
 } as const;
 
 export type ProjectStatus = (typeof ProjectStatus)[keyof typeof ProjectStatus];
+
+/**
+ * Project priority values
+ *
+ * WHY: Priority levels help with resource allocation and scheduling.
+ */
+export const ProjectPriority = {
+  LOW: 'low',
+  MEDIUM: 'medium',
+  HIGH: 'high',
+  URGENT: 'urgent',
+} as const;
+
+export type ProjectPriority = (typeof ProjectPriority)[keyof typeof ProjectPriority];
 
 /**
  * Proposal status values
@@ -49,12 +64,13 @@ export type ProjectStatus = (typeof ProjectStatus)[keyof typeof ProjectStatus];
  * tracking the approval workflow.
  */
 export const ProposalStatus = {
-  DRAFT: 'DRAFT',
-  SENT: 'SENT',
-  VIEWED: 'VIEWED',
-  APPROVED: 'APPROVED',
-  REJECTED: 'REJECTED',
-  EXPIRED: 'EXPIRED',
+  DRAFT: 'draft',
+  SENT: 'sent',
+  VIEWED: 'viewed',
+  APPROVED: 'approved',
+  REJECTED: 'rejected',
+  EXPIRED: 'expired',
+  REVISED: 'revised',
 } as const;
 
 export type ProposalStatus = (typeof ProposalStatus)[keyof typeof ProposalStatus];
@@ -63,12 +79,16 @@ export type ProposalStatus = (typeof ProposalStatus)[keyof typeof ProposalStatus
  * Invoice status values
  *
  * WHY: Tracks payment state for billing and reporting.
+ * These match the backend InvoiceStatus enum.
  */
 export const InvoiceStatus = {
-  PENDING: 'PENDING',
-  PAID: 'PAID',
-  FAILED: 'FAILED',
-  REFUNDED: 'REFUNDED',
+  DRAFT: 'draft',
+  SENT: 'sent',
+  PAID: 'paid',
+  PARTIALLY_PAID: 'partially_paid',
+  OVERDUE: 'overdue',
+  CANCELLED: 'cancelled',
+  REFUNDED: 'refunded',
 } as const;
 
 export type InvoiceStatus = (typeof InvoiceStatus)[keyof typeof InvoiceStatus];

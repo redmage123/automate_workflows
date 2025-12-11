@@ -20,9 +20,14 @@ from app.services import email as email_module
 
 
 # Test database URL
-# WHY: Using SQLite for tests eliminates external database dependencies
-# and makes tests faster. For integration tests, use PostgreSQL.
-TEST_ASYNC_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+# WHY: Using PostgreSQL for tests because the models use PostgreSQL-specific
+# features like JSONB. Each test creates/drops tables for isolation.
+# Using an environment variable allows overriding in CI.
+import os
+TEST_ASYNC_DATABASE_URL = os.getenv(
+    "TEST_DATABASE_URL",
+    "postgresql+asyncpg://postgres:test_password@localhost:5432/automation_platform_test"
+)
 
 
 @pytest.fixture(scope="session")

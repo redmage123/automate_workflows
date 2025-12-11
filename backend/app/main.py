@@ -19,7 +19,7 @@ from app.core.exception_handlers import (
     generic_exception_handler,
 )
 from app.middleware import SecurityHeadersMiddleware, RequestContextMiddleware, RateLimitMiddleware
-from app.api import auth, organizations
+from app.api import auth, organizations, projects, proposals, invoices
 
 
 def create_app() -> FastAPI:
@@ -106,10 +106,11 @@ def create_app() -> FastAPI:
     # WHY: Organizing routes in separate modules improves maintainability
     app.include_router(auth.router, prefix="/api")
     app.include_router(organizations.router, prefix="/api")
-
-    # TODO: Register additional routers as they are created
-    # app.include_router(projects_router, prefix="/api")
-    # app.include_router(proposals_router, prefix="/api")
+    app.include_router(projects.router, prefix="/api")
+    app.include_router(proposals.router, prefix="/api")
+    app.include_router(invoices.router, prefix="/api")
+    app.include_router(invoices.payments_router, prefix="/api")
+    app.include_router(invoices.webhooks_router, prefix="/api")
 
     return app
 
