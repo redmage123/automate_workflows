@@ -1,0 +1,79 @@
+{#
+Ticket Created Notification Template
+
+WHAT: Email sent when a new support ticket is created.
+
+WHY: Confirms ticket receipt and sets SLA expectations.
+
+Variables:
+- user_name: User's display name
+- ticket_id: Ticket ID number
+- ticket_subject: Ticket subject
+- ticket_description: Ticket description (truncated)
+- ticket_priority: Priority level (low, medium, high, urgent)
+- ticket_category: Category
+- ticket_url: URL to view ticket
+- sla_response_hours: Hours until first response expected
+- sla_resolution_hours: Hours until resolution expected
+- created_at: Timestamp of ticket creation
+#}
+{% extends "base.html" %}
+
+{% block title %}Ticket #{{ ticket_id }} Created{% endblock %}
+
+{% block content %}
+<h2>Ticket #{{ ticket_id }} Received</h2>
+
+<p>Hi {{ user_name }},</p>
+
+<p>Your support request has been received and assigned ticket number <strong>#{{ ticket_id }}</strong>.</p>
+
+<dl class="details-list">
+    <dt>Subject</dt>
+    <dd>{{ ticket_subject }}</dd>
+
+    <dt>Priority</dt>
+    <dd>
+        {% if ticket_priority == 'urgent' %}
+        <span style="color: #dc2626; font-weight: 600;">URGENT</span>
+        {% elif ticket_priority == 'high' %}
+        <span style="color: #f59e0b; font-weight: 600;">High</span>
+        {% elif ticket_priority == 'medium' %}
+        <span style="color: #3b82f6;">Medium</span>
+        {% else %}
+        <span style="color: #6b7280;">Low</span>
+        {% endif %}
+    </dd>
+
+    <dt>Category</dt>
+    <dd>{{ ticket_category | title }}</dd>
+
+    <dt>Created</dt>
+    <dd>{{ created_at }}</dd>
+</dl>
+
+{% if ticket_description %}
+<div class="info-box">
+    <p><strong>Description:</strong><br>{{ ticket_description | truncate(200) }}</p>
+</div>
+{% endif %}
+
+<h3 style="color: #1f2937; font-size: 16px; margin-top: 24px;">Service Level Agreement</h3>
+
+<table class="data-table">
+    <tr>
+        <td><strong>First Response</strong></td>
+        <td>Within {{ sla_response_hours }} hours</td>
+    </tr>
+    <tr>
+        <td><strong>Resolution Target</strong></td>
+        <td>Within {{ sla_resolution_hours }} hours</td>
+    </tr>
+</table>
+
+<p style="text-align: center; margin-top: 24px;">
+    <a href="{{ ticket_url }}" class="btn btn-primary">View Ticket</a>
+</p>
+
+<p style="color: #6b7280; font-size: 14px;">You can reply to this email to add comments to your ticket, or visit the link above to track progress.</p>
+{% endblock %}

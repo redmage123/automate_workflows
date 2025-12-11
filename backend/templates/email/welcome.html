@@ -1,0 +1,82 @@
+{#
+Welcome Email Template
+
+WHAT: Email sent after successful registration and email verification.
+
+WHY: Welcome emails:
+- Confirm successful account setup
+- Guide users to first steps
+- Set expectations for the platform
+- Improve user engagement
+
+Variables:
+- user_name: User's display name
+- organization_name: User's organization name
+- dashboard_url: URL to the main dashboard
+- help_url: URL to help/documentation
+#}
+{% extends "base.html" %}
+
+{% block title %}Welcome to Automation Platform{% endblock %}
+
+{% block content %}
+<h2>Welcome to Automation Platform!</h2>
+
+<p>Hi {{ user_name }},</p>
+
+<p>Your account has been successfully created{% if organization_name %} for <strong>{{ organization_name }}</strong>{% endif %}. We're excited to help you automate your workflows and streamline your business operations.</p>
+
+<div class="info-box">
+    <p><strong>Getting Started</strong><br>
+    Visit your dashboard to explore the platform and set up your first automation.</p>
+</div>
+
+<p style="text-align: center;">
+    <a href="{{ dashboard_url }}" class="btn btn-primary">Go to Dashboard</a>
+</p>
+
+<h3 style="color: #1f2937; font-size: 16px; margin-top: 24px;">What You Can Do</h3>
+
+<table class="data-table">
+    <tr>
+        <td style="width: 40px; vertical-align: top; padding-right: 12px;">
+            <span style="font-size: 24px;">&#128640;</span>
+        </td>
+        <td>
+            <strong>Create Projects</strong><br>
+            <span style="color: #6b7280;">Organize your work into projects and track progress</span>
+        </td>
+    </tr>
+    <tr>
+        <td style="vertical-align: top; padding-right: 12px;">
+            <span style="font-size: 24px;">&#9889;</span>
+        </td>
+        <td>
+            <strong>Automate Workflows</strong><br>
+            <span style="color: #6b7280;">Set up n8n workflows to automate repetitive tasks</span>
+        </td>
+    </tr>
+    <tr>
+        <td style="vertical-align: top; padding-right: 12px;">
+            <span style="font-size: 24px;">&#128221;</span>
+        </td>
+        <td>
+            <strong>Generate Proposals</strong><br>
+            <span style="color: #6b7280;">Create professional proposals for your clients</span>
+        </td>
+    </tr>
+    <tr>
+        <td style="vertical-align: top; padding-right: 12px;">
+            <span style="font-size: 24px;">&#127919;</span>
+        </td>
+        <td>
+            <strong>Track Support Tickets</strong><br>
+            <span style="color: #6b7280;">Manage support requests with SLA tracking</span>
+        </td>
+    </tr>
+</table>
+
+<p style="margin-top: 24px;">Need help getting started? Check out our <a href="{{ help_url }}" style="color: #2563eb;">documentation</a> or contact our support team.</p>
+
+<p>Best regards,<br>The Automation Platform Team</p>
+{% endblock %}

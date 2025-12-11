@@ -138,20 +138,6 @@ export const TicketCategory = {
 export type TicketCategory = (typeof TicketCategory)[keyof typeof TicketCategory];
 
 /**
- * Workflow status values
- *
- * WHY: Tracks n8n workflow instance state.
- */
-export const WorkflowStatus = {
-  ACTIVE: 'ACTIVE',
-  PAUSED: 'PAUSED',
-  ERROR: 'ERROR',
-  DELETED: 'DELETED',
-} as const;
-
-export type WorkflowStatus = (typeof WorkflowStatus)[keyof typeof WorkflowStatus];
-
-/**
  * Pagination parameters
  *
  * WHY: Consistent pagination across all list endpoints.

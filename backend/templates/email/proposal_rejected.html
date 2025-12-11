@@ -1,0 +1,62 @@
+{#
+Proposal Rejected Notification Template
+
+WHAT: Email sent when a client rejects a proposal.
+
+WHY: Notifies service provider of rejection with feedback for revision.
+
+Variables:
+- user_name: User's display name (service provider)
+- proposal_id: Proposal ID
+- proposal_title: Proposal title
+- project_name: Related project name
+- rejected_by: Name of person who rejected
+- rejected_at: Rejection timestamp
+- rejection_reason: Client's reason for rejection (if provided)
+- proposal_url: URL to view and revise proposal
+#}
+{% extends "base.html" %}
+
+{% block title %}Proposal Update: {{ proposal_title }}{% endblock %}
+
+{% block content %}
+<h2>Proposal Not Approved</h2>
+
+<p>Hi {{ user_name }},</p>
+
+<p>Unfortunately, your proposal was not approved by <strong>{{ rejected_by }}</strong>.</p>
+
+<dl class="details-list">
+    <dt>Proposal</dt>
+    <dd>{{ proposal_title }}</dd>
+
+    {% if project_name %}
+    <dt>Project</dt>
+    <dd>{{ project_name }}</dd>
+    {% endif %}
+
+    <dt>Rejected By</dt>
+    <dd>{{ rejected_by }}</dd>
+
+    <dt>Rejected At</dt>
+    <dd>{{ rejected_at }}</dd>
+</dl>
+
+{% if rejection_reason %}
+<div class="warning-box">
+    <p><strong>Feedback from {{ rejected_by }}:</strong><br>
+    {{ rejection_reason }}</p>
+</div>
+{% endif %}
+
+<div class="info-box">
+    <p><strong>What You Can Do:</strong><br>
+    You can create a revised proposal addressing any feedback. Use the "Create Revision" feature to maintain the proposal history.</p>
+</div>
+
+<p style="text-align: center; margin-top: 24px;">
+    <a href="{{ proposal_url }}" class="btn btn-primary">View &amp; Revise Proposal</a>
+</p>
+
+<p style="color: #6b7280; font-size: 14px;">Consider reaching out to the client directly to discuss their concerns before submitting a revision.</p>
+{% endblock %}

@@ -1,0 +1,79 @@
+{#
+Invoice Paid Confirmation Template
+
+WHAT: Email sent when an invoice payment is received.
+
+WHY: Confirms payment receipt for both parties.
+
+Variables:
+- user_name: User's display name
+- invoice_id: Invoice ID/number
+- invoice_number: Display invoice number
+- project_name: Related project name
+- total_amount: Total invoice amount (formatted)
+- currency: Currency code
+- paid_at: Payment timestamp
+- payment_method: Payment method used (e.g., "Credit Card ending in 4242")
+- receipt_url: URL to view/download receipt
+- is_client: Boolean - whether recipient is the paying client
+#}
+{% extends "base.html" %}
+
+{% block title %}Payment Received - Invoice {{ invoice_number }}{% endblock %}
+
+{% block header %}
+<h1 style="color: #10b981;">&#10003; Payment Received</h1>
+{% endblock %}
+
+{% block content %}
+<h2>Thank You for Your Payment!</h2>
+
+<p>Hi {{ user_name }},</p>
+
+{% if is_client %}
+<p>We've received your payment for invoice <strong>{{ invoice_number }}</strong>. Thank you for your business!</p>
+{% else %}
+<p>Great news! Payment has been received for invoice <strong>{{ invoice_number }}</strong>.</p>
+{% endif %}
+
+<dl class="details-list">
+    <dt>Invoice Number</dt>
+    <dd>{{ invoice_number }}</dd>
+
+    {% if project_name %}
+    <dt>Project</dt>
+    <dd>{{ project_name }}</dd>
+    {% endif %}
+
+    <dt>Amount Paid</dt>
+    <dd style="font-size: 20px; font-weight: 600; color: #10b981;">{{ currency }} {{ total_amount }}</dd>
+
+    <dt>Payment Date</dt>
+    <dd>{{ paid_at }}</dd>
+
+    {% if payment_method %}
+    <dt>Payment Method</dt>
+    <dd>{{ payment_method }}</dd>
+    {% endif %}
+</dl>
+
+<div class="success-box">
+    <p><strong>Invoice Status: PAID</strong><br>
+    {% if is_client %}
+    A receipt has been generated for your records.
+    {% else %}
+    The invoice has been marked as paid and the client has received a confirmation email.
+    {% endif %}
+    </p>
+</div>
+
+{% if receipt_url %}
+<p style="text-align: center; margin-top: 24px;">
+    <a href="{{ receipt_url }}" class="btn btn-primary">View Receipt</a>
+</p>
+{% endif %}
+
+{% if is_client %}
+<p style="color: #6b7280; font-size: 14px;">For accounting purposes, please save this email or download the receipt above.</p>
+{% endif %}
+{% endblock %}

@@ -33,6 +33,7 @@ from datetime import datetime
 
 from app.core.config import settings
 from app.core.exceptions import EmailServiceError
+from app.services.email_template_service import get_email_template_service, EmailTemplateService
 
 logger = logging.getLogger(__name__)
 
@@ -650,15 +651,20 @@ class EmailService:
     - Logging and audit
 
     HOW: Uses email providers (Resend/Postmark) with fallback support,
-    templates for consistent emails, and async sending for performance.
+    Jinja2 templates for consistent emails, and async sending for performance.
     """
 
-    def __init__(self, provider: Optional[EmailProvider] = None):
+    def __init__(
+        self,
+        provider: Optional[EmailProvider] = None,
+        template_service: Optional[EmailTemplateService] = None,
+    ):
         """
         Initialize email service.
 
         Args:
             provider: Email provider to use (auto-detected if not provided)
+            template_service: Template service for rendering (auto-created if not provided)
         """
         if provider:
             self._provider = provider
@@ -668,6 +674,8 @@ class EmailService:
             # Use mock provider in development/testing
             logger.warning("No email provider configured, using mock provider")
             self._provider = MockEmailProvider()
+
+        self._template_service = template_service or get_email_template_service()
 
     async def send_email(self, message: EmailMessage) -> EmailResult:
         """
@@ -729,6 +737,13 @@ class EmailService:
         """
         Send email verification email.
 
+        WHAT: Sends email with verification link/code to confirm email ownership.
+
+        WHY: Email verification prevents fake accounts and ensures users
+        can receive important communications (OWASP A07).
+
+        HOW: Renders Jinja2 template with user data and sends via provider.
+
         Args:
             to_email: Recipient email address
             user_name: User's display name
@@ -742,7 +757,8 @@ class EmailService:
             f"{settings.FRONTEND_URL}/auth/verify-email?token={verification_token}"
         )
 
-        subject, html_content, text_content = EmailTemplates.verification_email(
+        # Use Jinja2 templates for professional emails
+        subject, html_content, text_content = self._template_service.render_verification_email(
             user_name=user_name,
             verification_url=verification_url,
             verification_code=verification_code,
@@ -772,6 +788,12 @@ class EmailService:
         """
         Send password reset email.
 
+        WHAT: Sends email with password reset link/code.
+
+        WHY: Secure password recovery for users who forgot their password.
+
+        HOW: Renders Jinja2 template with reset URL and sends via provider.
+
         Args:
             to_email: Recipient email address
             user_name: User's display name
@@ -785,7 +807,8 @@ class EmailService:
             f"{settings.FRONTEND_URL}/auth/reset-password?token={reset_token}"
         )
 
-        subject, html_content, text_content = EmailTemplates.password_reset_email(
+        # Use Jinja2 templates for professional emails
+        subject, html_content, text_content = self._template_service.render_password_reset_email(
             user_name=user_name,
             reset_url=reset_url,
             reset_code=reset_code,
@@ -809,19 +832,32 @@ class EmailService:
         self,
         to_email: str,
         user_name: str,
+        ip_address: Optional[str] = None,
+        location: Optional[str] = None,
     ) -> EmailResult:
         """
         Send password changed notification.
 
+        WHAT: Notifies user that their password was changed.
+
+        WHY: Security notification helps detect unauthorized access.
+
+        HOW: Renders Jinja2 template with change details and sends via provider.
+
         Args:
             to_email: Recipient email address
             user_name: User's display name
+            ip_address: IP address where change was made
+            location: Approximate location
 
         Returns:
             EmailResult with send status
         """
-        subject, html_content, text_content = EmailTemplates.password_changed_email(
+        # Use Jinja2 templates for professional emails
+        subject, html_content, text_content = self._template_service.render_password_changed_email(
             user_name=user_name,
+            ip_address=ip_address,
+            location=location,
         )
 
         message = EmailMessage(
@@ -830,6 +866,597 @@ class EmailService:
             html_content=html_content,
             text_content=text_content,
             email_type=EmailType.PASSWORD_CHANGED,
+        )
+
+        return await self.send_email(message)
+
+    async def send_welcome_email(
+        self,
+        to_email: str,
+        user_name: str,
+        organization_name: Optional[str] = None,
+    ) -> EmailResult:
+        """
+        Send welcome email after registration/verification.
+
+        WHAT: Welcomes new user and guides them to get started.
+
+        WHY: Improves user onboarding and engagement.
+
+        HOW: Renders Jinja2 template with welcome message and sends via provider.
+
+        Args:
+            to_email: Recipient email address
+            user_name: User's display name
+            organization_name: User's organization name
+
+        Returns:
+            EmailResult with send status
+        """
+        subject, html_content, text_content = self._template_service.render_welcome_email(
+            user_name=user_name,
+            organization_name=organization_name,
+        )
+
+        message = EmailMessage(
+            to_email=to_email,
+            subject=subject,
+            html_content=html_content,
+            text_content=text_content,
+            email_type=EmailType.WELCOME,
+        )
+
+        return await self.send_email(message)
+
+    async def send_ticket_created_email(
+        self,
+        to_email: str,
+        user_name: str,
+        ticket_id: int,
+        ticket_subject: str,
+        ticket_description: Optional[str] = None,
+        ticket_priority: str = "medium",
+        ticket_category: str = "general",
+        sla_response_hours: int = 24,
+        sla_resolution_hours: int = 72,
+    ) -> EmailResult:
+        """
+        Send ticket created notification.
+
+        WHAT: Confirms ticket receipt with SLA expectations.
+
+        WHY: Sets customer expectations for response time.
+
+        HOW: Renders Jinja2 template with ticket details and sends via provider.
+
+        Args:
+            to_email: Recipient email address
+            user_name: User's display name
+            ticket_id: Ticket ID
+            ticket_subject: Ticket subject
+            ticket_description: Ticket description
+            ticket_priority: Priority level
+            ticket_category: Category
+            sla_response_hours: SLA response hours
+            sla_resolution_hours: SLA resolution hours
+
+        Returns:
+            EmailResult with send status
+        """
+        subject, html_content, text_content = self._template_service.render_ticket_created_email(
+            user_name=user_name,
+            ticket_id=ticket_id,
+            ticket_subject=ticket_subject,
+            ticket_description=ticket_description,
+            ticket_priority=ticket_priority,
+            ticket_category=ticket_category,
+            sla_response_hours=sla_response_hours,
+            sla_resolution_hours=sla_resolution_hours,
+        )
+
+        message = EmailMessage(
+            to_email=to_email,
+            subject=subject,
+            html_content=html_content,
+            text_content=text_content,
+            email_type=EmailType.TICKET,
+            metadata={
+                "ticket_id": ticket_id,
+                "action": "created",
+            },
+        )
+
+        return await self.send_email(message)
+
+    async def send_ticket_updated_email(
+        self,
+        to_email: str,
+        user_name: str,
+        ticket_id: int,
+        ticket_subject: str,
+        old_status: Optional[str] = None,
+        new_status: Optional[str] = None,
+        assigned_to: Optional[str] = None,
+        updated_by: Optional[str] = None,
+        update_message: Optional[str] = None,
+    ) -> EmailResult:
+        """
+        Send ticket updated notification.
+
+        WHAT: Notifies user of ticket status or assignment changes.
+
+        WHY: Keeps users informed of ticket progress.
+
+        HOW: Renders Jinja2 template with update details and sends via provider.
+
+        Args:
+            to_email: Recipient email address
+            user_name: User's display name
+            ticket_id: Ticket ID
+            ticket_subject: Ticket subject
+            old_status: Previous status
+            new_status: New status
+            assigned_to: Assigned agent
+            updated_by: Who made the update
+            update_message: Optional message
+
+        Returns:
+            EmailResult with send status
+        """
+        subject, html_content, text_content = self._template_service.render_ticket_updated_email(
+            user_name=user_name,
+            ticket_id=ticket_id,
+            ticket_subject=ticket_subject,
+            old_status=old_status,
+            new_status=new_status,
+            assigned_to=assigned_to,
+            updated_by=updated_by,
+            update_message=update_message,
+        )
+
+        message = EmailMessage(
+            to_email=to_email,
+            subject=subject,
+            html_content=html_content,
+            text_content=text_content,
+            email_type=EmailType.TICKET,
+            metadata={
+                "ticket_id": ticket_id,
+                "action": "updated",
+                "new_status": new_status,
+            },
+        )
+
+        return await self.send_email(message)
+
+    async def send_ticket_comment_email(
+        self,
+        to_email: str,
+        user_name: str,
+        ticket_id: int,
+        ticket_subject: str,
+        comment_author: str,
+        comment_author_role: str,
+        comment_text: str,
+    ) -> EmailResult:
+        """
+        Send ticket comment notification.
+
+        WHAT: Notifies user of new comment on their ticket.
+
+        WHY: Keeps all parties informed of ticket conversation.
+
+        HOW: Renders Jinja2 template with comment details and sends via provider.
+
+        Args:
+            to_email: Recipient email address
+            user_name: User's display name
+            ticket_id: Ticket ID
+            ticket_subject: Ticket subject
+            comment_author: Comment author name
+            comment_author_role: Author role (agent/client)
+            comment_text: Comment content
+
+        Returns:
+            EmailResult with send status
+        """
+        subject, html_content, text_content = self._template_service.render_ticket_comment_email(
+            user_name=user_name,
+            ticket_id=ticket_id,
+            ticket_subject=ticket_subject,
+            comment_author=comment_author,
+            comment_author_role=comment_author_role,
+            comment_text=comment_text,
+        )
+
+        message = EmailMessage(
+            to_email=to_email,
+            subject=subject,
+            html_content=html_content,
+            text_content=text_content,
+            email_type=EmailType.TICKET,
+            metadata={
+                "ticket_id": ticket_id,
+                "action": "comment",
+            },
+        )
+
+        return await self.send_email(message)
+
+    async def send_proposal_sent_email(
+        self,
+        to_email: str,
+        user_name: str,
+        proposal_id: int,
+        proposal_title: str,
+        total_amount: str,
+        currency: str = "USD",
+        expires_at: Optional[str] = None,
+        sender_name: str = "Your service provider",
+        organization_name: str = "Automation Platform",
+        project_name: Optional[str] = None,
+        line_items: Optional[List[Dict[str, Any]]] = None,
+    ) -> EmailResult:
+        """
+        Send proposal sent notification to client.
+
+        WHAT: Notifies client of new proposal requiring review.
+
+        WHY: Prompts client action on proposal.
+
+        HOW: Renders Jinja2 template with proposal details and sends via provider.
+
+        Args:
+            to_email: Client email address
+            user_name: Client's display name
+            proposal_id: Proposal ID
+            proposal_title: Proposal title
+            total_amount: Total amount (formatted)
+            currency: Currency code
+            expires_at: Expiration date
+            sender_name: Sender name
+            organization_name: Organization name
+            project_name: Related project name
+            line_items: List of line items
+
+        Returns:
+            EmailResult with send status
+        """
+        subject, html_content, text_content = self._template_service.render_proposal_sent_email(
+            user_name=user_name,
+            proposal_id=proposal_id,
+            proposal_title=proposal_title,
+            total_amount=total_amount,
+            currency=currency,
+            expires_at=expires_at,
+            sender_name=sender_name,
+            organization_name=organization_name,
+            project_name=project_name,
+            line_items=line_items,
+        )
+
+        message = EmailMessage(
+            to_email=to_email,
+            subject=subject,
+            html_content=html_content,
+            text_content=text_content,
+            email_type=EmailType.PROPOSAL,
+            metadata={
+                "proposal_id": proposal_id,
+                "action": "sent",
+            },
+        )
+
+        return await self.send_email(message)
+
+    async def send_proposal_approved_email(
+        self,
+        to_email: str,
+        user_name: str,
+        proposal_id: int,
+        proposal_title: str,
+        total_amount: str,
+        currency: str = "USD",
+        approved_by: str = "Client",
+        project_name: Optional[str] = None,
+        project_url: Optional[str] = None,
+    ) -> EmailResult:
+        """
+        Send proposal approved notification to service provider.
+
+        WHAT: Notifies service provider that proposal was approved.
+
+        WHY: Enables work to begin on approved proposals.
+
+        HOW: Renders Jinja2 template with approval details and sends via provider.
+
+        Args:
+            to_email: Service provider email address
+            user_name: Service provider's display name
+            proposal_id: Proposal ID
+            proposal_title: Proposal title
+            total_amount: Total amount (formatted)
+            currency: Currency code
+            approved_by: Name of approver
+            project_name: Related project name
+            project_url: URL to project
+
+        Returns:
+            EmailResult with send status
+        """
+        subject, html_content, text_content = self._template_service.render_proposal_approved_email(
+            user_name=user_name,
+            proposal_id=proposal_id,
+            proposal_title=proposal_title,
+            total_amount=total_amount,
+            currency=currency,
+            approved_by=approved_by,
+            project_name=project_name,
+            project_url=project_url,
+        )
+
+        message = EmailMessage(
+            to_email=to_email,
+            subject=subject,
+            html_content=html_content,
+            text_content=text_content,
+            email_type=EmailType.PROPOSAL,
+            metadata={
+                "proposal_id": proposal_id,
+                "action": "approved",
+            },
+        )
+
+        return await self.send_email(message)
+
+    async def send_proposal_rejected_email(
+        self,
+        to_email: str,
+        user_name: str,
+        proposal_id: int,
+        proposal_title: str,
+        rejected_by: str = "Client",
+        rejection_reason: Optional[str] = None,
+        project_name: Optional[str] = None,
+    ) -> EmailResult:
+        """
+        Send proposal rejected notification to service provider.
+
+        WHAT: Notifies service provider that proposal was rejected.
+
+        WHY: Enables revision or follow-up on rejected proposals.
+
+        HOW: Renders Jinja2 template with rejection details and sends via provider.
+
+        Args:
+            to_email: Service provider email address
+            user_name: Service provider's display name
+            proposal_id: Proposal ID
+            proposal_title: Proposal title
+            rejected_by: Name of person who rejected
+            rejection_reason: Reason for rejection
+            project_name: Related project name
+
+        Returns:
+            EmailResult with send status
+        """
+        subject, html_content, text_content = self._template_service.render_proposal_rejected_email(
+            user_name=user_name,
+            proposal_id=proposal_id,
+            proposal_title=proposal_title,
+            rejected_by=rejected_by,
+            rejection_reason=rejection_reason,
+            project_name=project_name,
+        )
+
+        message = EmailMessage(
+            to_email=to_email,
+            subject=subject,
+            html_content=html_content,
+            text_content=text_content,
+            email_type=EmailType.PROPOSAL,
+            metadata={
+                "proposal_id": proposal_id,
+                "action": "rejected",
+            },
+        )
+
+        return await self.send_email(message)
+
+    async def send_invoice_created_email(
+        self,
+        to_email: str,
+        user_name: str,
+        invoice_id: int,
+        invoice_number: str,
+        total_amount: str,
+        currency: str = "USD",
+        due_date: str = "",
+        organization_name: str = "Automation Platform",
+        project_name: Optional[str] = None,
+        line_items: Optional[List[Dict[str, Any]]] = None,
+        is_overdue: bool = False,
+    ) -> EmailResult:
+        """
+        Send invoice created notification to client.
+
+        WHAT: Sends invoice with payment details to client.
+
+        WHY: Prompts client payment action.
+
+        HOW: Renders Jinja2 template with invoice details and sends via provider.
+
+        Args:
+            to_email: Client email address
+            user_name: Client's display name
+            invoice_id: Invoice ID
+            invoice_number: Display invoice number
+            total_amount: Total amount (formatted)
+            currency: Currency code
+            due_date: Payment due date
+            organization_name: Billing organization
+            project_name: Related project name
+            line_items: List of invoice items
+            is_overdue: Whether invoice is overdue
+
+        Returns:
+            EmailResult with send status
+        """
+        subject, html_content, text_content = self._template_service.render_invoice_created_email(
+            user_name=user_name,
+            invoice_id=invoice_id,
+            invoice_number=invoice_number,
+            total_amount=total_amount,
+            currency=currency,
+            due_date=due_date,
+            organization_name=organization_name,
+            project_name=project_name,
+            line_items=line_items,
+            is_overdue=is_overdue,
+        )
+
+        message = EmailMessage(
+            to_email=to_email,
+            subject=subject,
+            html_content=html_content,
+            text_content=text_content,
+            email_type=EmailType.INVOICE,
+            metadata={
+                "invoice_id": invoice_id,
+                "invoice_number": invoice_number,
+                "action": "created",
+            },
+        )
+
+        return await self.send_email(message)
+
+    async def send_invoice_paid_email(
+        self,
+        to_email: str,
+        user_name: str,
+        invoice_id: int,
+        invoice_number: str,
+        total_amount: str,
+        currency: str = "USD",
+        payment_method: Optional[str] = None,
+        project_name: Optional[str] = None,
+        is_client: bool = True,
+    ) -> EmailResult:
+        """
+        Send invoice paid confirmation.
+
+        WHAT: Confirms payment receipt to client and/or service provider.
+
+        WHY: Confirms successful payment for records.
+
+        HOW: Renders Jinja2 template with payment details and sends via provider.
+
+        Args:
+            to_email: Recipient email address
+            user_name: Recipient's display name
+            invoice_id: Invoice ID
+            invoice_number: Display invoice number
+            total_amount: Total amount (formatted)
+            currency: Currency code
+            payment_method: Payment method used
+            project_name: Related project name
+            is_client: Whether recipient is the paying client
+
+        Returns:
+            EmailResult with send status
+        """
+        subject, html_content, text_content = self._template_service.render_invoice_paid_email(
+            user_name=user_name,
+            invoice_id=invoice_id,
+            invoice_number=invoice_number,
+            total_amount=total_amount,
+            currency=currency,
+            payment_method=payment_method,
+            project_name=project_name,
+            is_client=is_client,
+        )
+
+        message = EmailMessage(
+            to_email=to_email,
+            subject=subject,
+            html_content=html_content,
+            text_content=text_content,
+            email_type=EmailType.INVOICE,
+            metadata={
+                "invoice_id": invoice_id,
+                "invoice_number": invoice_number,
+                "action": "paid",
+            },
+        )
+
+        return await self.send_email(message)
+
+    async def send_sla_warning_email(
+        self,
+        to_email: str,
+        user_name: str,
+        ticket_id: int,
+        ticket_subject: str,
+        ticket_priority: str,
+        sla_type: str,
+        sla_status: str,
+        due_at: str,
+        customer_name: str,
+        organization_name: Optional[str] = None,
+        assigned_to: Optional[str] = None,
+        time_remaining: Optional[str] = None,
+    ) -> EmailResult:
+        """
+        Send SLA warning or breach notification.
+
+        WHAT: Alerts agent/admin of SLA approaching breach or breached.
+
+        WHY: Enables proactive SLA management and escalation.
+
+        HOW: Renders Jinja2 template with SLA details and sends via provider.
+
+        Args:
+            to_email: Recipient email address (agent/admin)
+            user_name: Recipient's display name
+            ticket_id: Ticket ID
+            ticket_subject: Ticket subject
+            ticket_priority: Priority level
+            sla_type: "response" or "resolution"
+            sla_status: "warning" or "breached"
+            due_at: SLA due date/time
+            customer_name: Customer who created ticket
+            organization_name: Customer's organization
+            assigned_to: Currently assigned agent
+            time_remaining: Time remaining (formatted)
+
+        Returns:
+            EmailResult with send status
+        """
+        subject, html_content, text_content = self._template_service.render_sla_warning_email(
+            user_name=user_name,
+            ticket_id=ticket_id,
+            ticket_subject=ticket_subject,
+            ticket_priority=ticket_priority,
+            sla_type=sla_type,
+            sla_status=sla_status,
+            due_at=due_at,
+            customer_name=customer_name,
+            organization_name=organization_name,
+            assigned_to=assigned_to,
+            time_remaining=time_remaining,
+        )
+
+        message = EmailMessage(
+            to_email=to_email,
+            subject=subject,
+            html_content=html_content,
+            text_content=text_content,
+            email_type=EmailType.SECURITY_ALERT,  # Using security alert for urgency
+            metadata={
+                "ticket_id": ticket_id,
+                "sla_type": sla_type,
+                "sla_status": sla_status,
+            },
         )
 
         return await self.send_email(message)

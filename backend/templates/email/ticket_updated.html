@@ -1,0 +1,85 @@
+{#
+Ticket Updated Notification Template
+
+WHAT: Email sent when a ticket's status or assignment changes.
+
+WHY: Keeps users informed of progress on their tickets.
+
+Variables:
+- user_name: User's display name
+- ticket_id: Ticket ID number
+- ticket_subject: Ticket subject
+- ticket_url: URL to view ticket
+- old_status: Previous status
+- new_status: New status
+- assigned_to: Assigned agent name (if changed)
+- updated_by: Who made the update
+- update_message: Optional message about the update
+#}
+{% extends "base.html" %}
+
+{% block title %}Ticket #{{ ticket_id }} Updated{% endblock %}
+
+{% block content %}
+<h2>Ticket #{{ ticket_id }} Updated</h2>
+
+<p>Hi {{ user_name }},</p>
+
+<p>Your support ticket has been updated.</p>
+
+<dl class="details-list">
+    <dt>Ticket</dt>
+    <dd>#{{ ticket_id }}: {{ ticket_subject }}</dd>
+
+    {% if old_status and new_status %}
+    <dt>Status Changed</dt>
+    <dd>
+        <span style="color: #6b7280;">{{ old_status | title }}</span>
+        &rarr;
+        {% if new_status == 'resolved' %}
+        <span style="color: #10b981; font-weight: 600;">Resolved</span>
+        {% elif new_status == 'closed' %}
+        <span style="color: #6b7280; font-weight: 600;">Closed</span>
+        {% elif new_status == 'in_progress' %}
+        <span style="color: #3b82f6; font-weight: 600;">In Progress</span>
+        {% elif new_status == 'waiting' %}
+        <span style="color: #f59e0b; font-weight: 600;">Waiting for Response</span>
+        {% else %}
+        <span style="font-weight: 600;">{{ new_status | title }}</span>
+        {% endif %}
+    </dd>
+    {% endif %}
+
+    {% if assigned_to %}
+    <dt>Assigned To</dt>
+    <dd>{{ assigned_to }}</dd>
+    {% endif %}
+
+    {% if updated_by %}
+    <dt>Updated By</dt>
+    <dd>{{ updated_by }}</dd>
+    {% endif %}
+</dl>
+
+{% if update_message %}
+<div class="info-box">
+    <p><strong>Note:</strong><br>{{ update_message }}</p>
+</div>
+{% endif %}
+
+{% if new_status == 'resolved' %}
+<div class="success-box">
+    <p><strong>Your ticket has been resolved!</strong><br>
+    If you're satisfied with the resolution, no action is needed. If you need further assistance, you can reopen the ticket by replying to this email.</p>
+</div>
+{% elif new_status == 'waiting' %}
+<div class="warning-box">
+    <p><strong>We need your input!</strong><br>
+    Please respond to continue with your support request. You can reply to this email or use the link below.</p>
+</div>
+{% endif %}
+
+<p style="text-align: center; margin-top: 24px;">
+    <a href="{{ ticket_url }}" class="btn btn-primary">View Ticket</a>
+</p>
+{% endblock %}

@@ -1,0 +1,124 @@
+{#
+SLA Warning/Breach Notification Template
+
+WHAT: Email sent when a ticket's SLA is approaching breach or has breached.
+
+WHY: Enables proactive escalation and SLA compliance tracking.
+
+Variables:
+- user_name: User's display name (usually assigned agent or admin)
+- ticket_id: Ticket ID number
+- ticket_subject: Ticket subject
+- ticket_url: URL to view ticket
+- ticket_priority: Priority level
+- sla_type: Which SLA ("response" or "resolution")
+- sla_status: Status ("warning" or "breached")
+- due_at: SLA due date/time
+- time_remaining: Time remaining (formatted, e.g., "2h 15m")
+- customer_name: Customer who created ticket
+- organization_name: Customer's organization
+- assigned_to: Currently assigned agent (if any)
+#}
+{% extends "base.html" %}
+
+{% block title %}
+{% if sla_status == 'breached' %}
+SLA BREACH: Ticket #{{ ticket_id }}
+{% else %}
+SLA Warning: Ticket #{{ ticket_id }}
+{% endif %}
+{% endblock %}
+
+{% block header %}
+{% if sla_status == 'breached' %}
+<h1 style="color: #dc2626;">&#9888; SLA Breached</h1>
+{% else %}
+<h1 style="color: #f59e0b;">&#9888; SLA Warning</h1>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+{% if sla_status == 'breached' %}
+<h2 style="color: #dc2626;">{{ sla_type | title }} SLA Has Been Breached</h2>
+{% else %}
+<h2 style="color: #f59e0b;">{{ sla_type | title }} SLA At Risk</h2>
+{% endif %}
+
+<p>Hi {{ user_name }},</p>
+
+{% if sla_status == 'breached' %}
+<p>The <strong>{{ sla_type }}</strong> SLA for ticket <strong>#{{ ticket_id }}</strong> has been breached. Immediate attention is required.</p>
+{% else %}
+<p>The <strong>{{ sla_type }}</strong> SLA for ticket <strong>#{{ ticket_id }}</strong> is approaching its deadline. Please take action to avoid a breach.</p>
+{% endif %}
+
+<dl class="details-list">
+    <dt>Ticket</dt>
+    <dd>#{{ ticket_id }}: {{ ticket_subject }}</dd>
+
+    <dt>Priority</dt>
+    <dd>
+        {% if ticket_priority == 'urgent' %}
+        <span style="background-color: #fef2f2; color: #dc2626; padding: 2px 8px; border-radius: 4px; font-weight: 600;">URGENT</span>
+        {% elif ticket_priority == 'high' %}
+        <span style="background-color: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 4px; font-weight: 600;">HIGH</span>
+        {% else %}
+        {{ ticket_priority | title }}
+        {% endif %}
+    </dd>
+
+    <dt>Customer</dt>
+    <dd>{{ customer_name }}{% if organization_name %} ({{ organization_name }}){% endif %}</dd>
+
+    {% if assigned_to %}
+    <dt>Assigned To</dt>
+    <dd>{{ assigned_to }}</dd>
+    {% else %}
+    <dt>Assigned To</dt>
+    <dd style="color: #dc2626; font-weight: 600;">UNASSIGNED</dd>
+    {% endif %}
+
+    <dt>SLA Type</dt>
+    <dd>{{ sla_type | title }}</dd>
+
+    <dt>Due At</dt>
+    <dd>{{ due_at }}</dd>
+
+    {% if sla_status != 'breached' and time_remaining %}
+    <dt>Time Remaining</dt>
+    <dd style="color: #f59e0b; font-weight: 600;">{{ time_remaining }}</dd>
+    {% endif %}
+</dl>
+
+{% if sla_status == 'breached' %}
+<div class="alert-box">
+    <p><strong>Action Required:</strong><br>
+    {% if sla_type == 'response' %}
+    Please respond to this ticket immediately. The customer has been waiting beyond the guaranteed response time.
+    {% else %}
+    This ticket needs to be resolved or escalated immediately. Consider involving additional resources if needed.
+    {% endif %}
+    </p>
+</div>
+{% else %}
+<div class="warning-box">
+    <p><strong>Prevent SLA Breach:</strong><br>
+    {% if sla_type == 'response' %}
+    Please provide an initial response to the customer before the deadline.
+    {% else %}
+    Please work to resolve this ticket or update the customer on progress before the deadline.
+    {% endif %}
+    </p>
+</div>
+{% endif %}
+
+{% if not assigned_to %}
+<div class="info-box">
+    <p><strong>Note:</strong> This ticket is currently unassigned. Please assign it to an appropriate agent immediately.</p>
+</div>
+{% endif %}
+
+<p style="text-align: center; margin-top: 24px;">
+    <a href="{{ ticket_url }}" class="btn btn-primary">View Ticket Now</a>
+</p>
+{% endblock %}

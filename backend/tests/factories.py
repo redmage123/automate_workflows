@@ -1025,10 +1025,8 @@ class TicketFactory:
         if status != TicketStatus.OPEN:
             ticket.status = status
             if status == TicketStatus.RESOLVED:
-                from datetime import datetime
                 ticket.resolved_at = datetime.utcnow()
             elif status == TicketStatus.CLOSED:
-                from datetime import datetime
                 ticket.closed_at = datetime.utcnow()
             await session.commit()
             await session.refresh(ticket)

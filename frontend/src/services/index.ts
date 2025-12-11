@@ -18,3 +18,4 @@ export * from './proposals';
 export * from './invoices';
 export * from './workflows';
 export * from './tickets';
+export * from './admin';

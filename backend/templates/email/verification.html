@@ -1,0 +1,41 @@
+{#
+Email Verification Template
+
+WHAT: Email sent to users to verify their email address after registration.
+
+WHY: Email verification prevents:
+- Fake account creation
+- Typo-based account issues
+- Spam account abuse
+- OWASP A07 compliance
+
+Variables:
+- user_name: User's display name
+- verification_url: Full URL to verify email
+- verification_code: Optional 6-digit code
+- expires_in: Human-readable expiration time (e.g., "24 hours")
+#}
+{% extends "base.html" %}
+
+{% block title %}Verify Your Email Address{% endblock %}
+
+{% block content %}
+<h2>Welcome, {{ user_name }}!</h2>
+
+<p>Thank you for creating an account with Automation Platform. To complete your registration and access all features, please verify your email address.</p>
+
+<p style="text-align: center;">
+    <a href="{{ verification_url }}" class="btn btn-primary">Verify Email Address</a>
+</p>
+
+{% if verification_code %}
+<p style="text-align: center; color: #6b7280;">Or enter this verification code:</p>
+<div class="code-box">{{ verification_code }}</div>
+{% endif %}
+
+<div class="info-box">
+    <p><strong>Note:</strong> This link will expire in {{ expires_in | default('24 hours') }}.</p>
+</div>
+
+<p style="color: #6b7280; font-size: 14px;">If you didn't create an account with us, you can safely ignore this email. Someone may have entered your email address by mistake.</p>
+{% endblock %}

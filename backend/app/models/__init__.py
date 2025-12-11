@@ -30,6 +30,13 @@ from app.models.ticket import (
     TicketAttachment,
     SLA_CONFIG,
 )
+from app.models.notification_preference import (
+    NotificationPreference,
+    NotificationCategory,
+    NotificationChannel,
+    NotificationFrequency,
+    DEFAULT_PREFERENCES,
+)
 
 __all__ = [
     "Base",
@@ -62,4 +69,9 @@ __all__ = [
     "TicketComment",
     "TicketAttachment",
     "SLA_CONFIG",
+    "NotificationPreference",
+    "NotificationCategory",
+    "NotificationChannel",
+    "NotificationFrequency",
+    "DEFAULT_PREFERENCES",
 ]

@@ -189,6 +189,27 @@ class Ticket(Base):
     resolved_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     closed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
+    # SLA notification tracking (to prevent duplicate notifications)
+    sla_response_warning_sent_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime, nullable=True
+    )
+    """Timestamp when response SLA warning notification was sent (75% elapsed)."""
+
+    sla_response_breach_sent_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime, nullable=True
+    )
+    """Timestamp when response SLA breach notification was sent."""
+
+    sla_resolution_warning_sent_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime, nullable=True
+    )
+    """Timestamp when resolution SLA warning notification was sent (75% elapsed)."""
+
+    sla_resolution_breach_sent_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime, nullable=True
+    )
+    """Timestamp when resolution SLA breach notification was sent."""
+
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), nullable=False
@@ -302,6 +323,88 @@ class Ticket(Base):
             self.sla_resolution_due_at = self.created_at + timedelta(
                 hours=config["resolution_hours"]
             )
+
+    @property
+    def is_sla_response_warning_zone(self) -> bool:
+        """
+        Check if response SLA is in warning zone (75% elapsed).
+
+        WHY: Allows proactive notification before breach occurs.
+
+        Returns:
+            True if 75% or more of response SLA time has elapsed
+            but not yet breached.
+        """
+        if self.first_response_at is not None:
+            return False  # Already responded
+        if self.sla_response_due_at is None:
+            return False
+
+        now = datetime.utcnow()
+        if now >= self.sla_response_due_at:
+            return False  # Already breached, not warning
+
+        total_time = (self.sla_response_due_at - self.created_at).total_seconds()
+        elapsed_time = (now - self.created_at).total_seconds()
+        elapsed_percent = elapsed_time / total_time if total_time > 0 else 0
+
+        return elapsed_percent >= 0.75
+
+    @property
+    def is_sla_resolution_warning_zone(self) -> bool:
+        """
+        Check if resolution SLA is in warning zone (75% elapsed).
+
+        WHY: Allows proactive notification before breach occurs.
+
+        Returns:
+            True if 75% or more of resolution SLA time has elapsed
+            but not yet breached.
+        """
+        if self.status in [TicketStatus.RESOLVED, TicketStatus.CLOSED]:
+            return False  # Already resolved
+        if self.sla_resolution_due_at is None:
+            return False
+
+        now = datetime.utcnow()
+        if now >= self.sla_resolution_due_at:
+            return False  # Already breached, not warning
+
+        total_time = (self.sla_resolution_due_at - self.created_at).total_seconds()
+        elapsed_time = (now - self.created_at).total_seconds()
+        elapsed_percent = elapsed_time / total_time if total_time > 0 else 0
+
+        return elapsed_percent >= 0.75
+
+    @property
+    def sla_response_elapsed_percent(self) -> Optional[float]:
+        """Get percentage of response SLA time elapsed."""
+        if self.first_response_at is not None:
+            return None  # Already responded
+        if self.sla_response_due_at is None or self.created_at is None:
+            return None
+
+        total_time = (self.sla_response_due_at - self.created_at).total_seconds()
+        if total_time <= 0:
+            return 100.0
+
+        elapsed_time = (datetime.utcnow() - self.created_at).total_seconds()
+        return min(100.0, (elapsed_time / total_time) * 100)
+
+    @property
+    def sla_resolution_elapsed_percent(self) -> Optional[float]:
+        """Get percentage of resolution SLA time elapsed."""
+        if self.status in [TicketStatus.RESOLVED, TicketStatus.CLOSED]:
+            return None  # Already resolved
+        if self.sla_resolution_due_at is None or self.created_at is None:
+            return None
+
+        total_time = (self.sla_resolution_due_at - self.created_at).total_seconds()
+        if total_time <= 0:
+            return 100.0
+
+        elapsed_time = (datetime.utcnow() - self.created_at).total_seconds()
+        return min(100.0, (elapsed_time / total_time) * 100)
 
 
 # ============================================================================

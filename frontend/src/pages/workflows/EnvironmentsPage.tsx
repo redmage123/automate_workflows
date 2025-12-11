@@ -23,7 +23,7 @@ import {
   deleteEnvironment,
   testEnvironmentConnection,
 } from '../../services/workflows';
-import { N8nEnvironmentCreate, N8nEnvironmentUpdate } from '../../types/workflow';
+import type { N8nEnvironmentCreate, N8nEnvironmentUpdate } from '../../types/workflow';
 
 export default function EnvironmentsPage() {
   const queryClient = useQueryClient();
@@ -228,7 +228,7 @@ export default function EnvironmentsPage() {
             </div>
             <div>
               <dt className="text-gray-500">Last Updated</dt>
-              <dd className="text-gray-900">{new Date(environment.updated_at).toLocaleString()}</dd>
+              <dd className="text-gray-900">{environment.updated_at ? new Date(environment.updated_at).toLocaleString() : 'Never'}</dd>
             </div>
           </dl>
 

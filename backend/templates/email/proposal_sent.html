@@ -1,0 +1,82 @@
+{#
+Proposal Sent Notification Template
+
+WHAT: Email sent when a proposal is sent to a client for review.
+
+WHY: Notifies client of new proposal requiring their action.
+
+Variables:
+- user_name: User's display name (client)
+- proposal_id: Proposal ID
+- proposal_title: Proposal title
+- project_name: Related project name
+- total_amount: Total proposal amount (formatted)
+- currency: Currency code (e.g., USD)
+- expires_at: Expiration date
+- proposal_url: URL to view and approve/reject proposal
+- sender_name: Name of person who sent the proposal
+- organization_name: Sending organization name
+- line_items: List of proposal line items (optional)
+#}
+{% extends "base.html" %}
+
+{% block title %}New Proposal: {{ proposal_title }}{% endblock %}
+
+{% block content %}
+<h2>You Have a New Proposal</h2>
+
+<p>Hi {{ user_name }},</p>
+
+<p>{{ sender_name }} from {{ organization_name }} has sent you a proposal for your review.</p>
+
+<dl class="details-list">
+    <dt>Proposal</dt>
+    <dd>{{ proposal_title }}</dd>
+
+    {% if project_name %}
+    <dt>Project</dt>
+    <dd>{{ project_name }}</dd>
+    {% endif %}
+
+    <dt>Total Amount</dt>
+    <dd style="font-size: 18px; font-weight: 600; color: #1f2937;">{{ currency }} {{ total_amount }}</dd>
+
+    <dt>Valid Until</dt>
+    <dd>{{ expires_at }}</dd>
+</dl>
+
+{% if line_items %}
+<h3 style="color: #1f2937; font-size: 16px; margin-top: 24px;">Summary</h3>
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>Item</th>
+            <th style="text-align: right;">Amount</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in line_items %}
+        <tr>
+            <td>{{ item.description }}</td>
+            <td style="text-align: right;">{{ currency }} {{ item.amount }}</td>
+        </tr>
+        {% endfor %}
+        <tr class="total-row">
+            <td><strong>Total</strong></td>
+            <td style="text-align: right;"><strong>{{ currency }} {{ total_amount }}</strong></td>
+        </tr>
+    </tbody>
+</table>
+{% endif %}
+
+<div class="info-box">
+    <p><strong>What's Next?</strong><br>
+    Review the proposal details and either approve to proceed or request revisions if needed.</p>
+</div>
+
+<p style="text-align: center; margin-top: 24px;">
+    <a href="{{ proposal_url }}" class="btn btn-primary">Review Proposal</a>
+</p>
+
+<p style="color: #6b7280; font-size: 14px;">This proposal will expire on {{ expires_at }}. If you have questions, please contact {{ sender_name }} directly.</p>
+{% endblock %}

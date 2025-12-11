@@ -17,8 +17,10 @@ import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore } from './store';
 
-// Layout components (to be created)
+// Layout components
 import MainLayout from './components/layout/MainLayout';
+import ErrorBoundary from './components/ErrorBoundary';
+import { ToastContainer } from './components/ui';
 
 // Page components
 import Login from './pages/auth/Login';
@@ -51,6 +53,15 @@ import {
 
 // Ticket pages
 import { TicketsPage, TicketDetailPage, TicketFormPage } from './pages/tickets';
+
+// Admin pages
+import {
+  AdminDashboard,
+  UsersPage,
+  OrganizationsPage,
+  AuditLogsPage,
+  AnalyticsPage,
+} from './pages/admin';
 
 /**
  * React Query client
@@ -144,66 +155,76 @@ function App() {
   }, [loadUser]);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Routes>
-          {/* Public routes (redirect if authenticated) */}
-          <Route element={<PublicRoute />}>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-          </Route>
-
-          {/* Protected routes (require authentication) */}
-          <Route element={<ProtectedRoute />}>
-            <Route element={<MainLayout />}>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/settings" element={<OrganizationSettings />} />
-
-              {/* Project routes */}
-              <Route path="/projects" element={<ProjectsPage />} />
-              <Route path="/projects/new" element={<ProjectFormPage />} />
-              <Route path="/projects/:id" element={<ProjectDetailPage />} />
-              <Route path="/projects/:id/edit" element={<ProjectFormPage />} />
-
-              {/* Proposal routes */}
-              <Route path="/proposals" element={<ProposalsPage />} />
-              <Route path="/proposals/new" element={<ProposalFormPage />} />
-              <Route path="/proposals/:id" element={<ProposalDetailPage />} />
-              <Route path="/proposals/:id/edit" element={<ProposalFormPage />} />
-              <Route path="/proposals/:id/revise" element={<ProposalFormPage />} />
-
-              {/* Onboarding routes */}
-              <Route path="/onboarding" element={<ClientOnboardingPage />} />
-
-              {/* Invoice routes */}
-              <Route path="/invoices" element={<InvoicesPage />} />
-              <Route path="/invoices/:id" element={<InvoiceDetailPage />} />
-
-              {/* Workflow routes */}
-              <Route path="/workflows" element={<WorkflowsPage />} />
-              <Route path="/workflows/new" element={<WorkflowFormPage />} />
-              <Route path="/workflows/templates" element={<TemplatesPage />} />
-              <Route path="/workflows/environment" element={<EnvironmentsPage />} />
-              <Route path="/workflows/:id" element={<WorkflowDetailPage />} />
-              <Route path="/workflows/:id/edit" element={<WorkflowFormPage />} />
-
-              {/* Ticket routes */}
-              <Route path="/tickets" element={<TicketsPage />} />
-              <Route path="/tickets/new" element={<TicketFormPage />} />
-              <Route path="/tickets/:id" element={<TicketDetailPage />} />
-              <Route path="/tickets/:id/edit" element={<TicketFormPage />} />
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <Routes>
+            {/* Public routes (redirect if authenticated) */}
+            <Route element={<PublicRoute />}>
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
             </Route>
-          </Route>
 
-          {/* Default redirect */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            {/* Protected routes (require authentication) */}
+            <Route element={<ProtectedRoute />}>
+              <Route element={<MainLayout />}>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/settings" element={<OrganizationSettings />} />
 
-          {/* 404 Not Found */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </QueryClientProvider>
+                {/* Project routes */}
+                <Route path="/projects" element={<ProjectsPage />} />
+                <Route path="/projects/new" element={<ProjectFormPage />} />
+                <Route path="/projects/:id" element={<ProjectDetailPage />} />
+                <Route path="/projects/:id/edit" element={<ProjectFormPage />} />
+
+                {/* Proposal routes */}
+                <Route path="/proposals" element={<ProposalsPage />} />
+                <Route path="/proposals/new" element={<ProposalFormPage />} />
+                <Route path="/proposals/:id" element={<ProposalDetailPage />} />
+                <Route path="/proposals/:id/edit" element={<ProposalFormPage />} />
+                <Route path="/proposals/:id/revise" element={<ProposalFormPage />} />
+
+                {/* Onboarding routes */}
+                <Route path="/onboarding" element={<ClientOnboardingPage />} />
+
+                {/* Invoice routes */}
+                <Route path="/invoices" element={<InvoicesPage />} />
+                <Route path="/invoices/:id" element={<InvoiceDetailPage />} />
+
+                {/* Workflow routes */}
+                <Route path="/workflows" element={<WorkflowsPage />} />
+                <Route path="/workflows/new" element={<WorkflowFormPage />} />
+                <Route path="/workflows/templates" element={<TemplatesPage />} />
+                <Route path="/workflows/environment" element={<EnvironmentsPage />} />
+                <Route path="/workflows/:id" element={<WorkflowDetailPage />} />
+                <Route path="/workflows/:id/edit" element={<WorkflowFormPage />} />
+
+                {/* Ticket routes */}
+                <Route path="/tickets" element={<TicketsPage />} />
+                <Route path="/tickets/new" element={<TicketFormPage />} />
+                <Route path="/tickets/:id" element={<TicketDetailPage />} />
+                <Route path="/tickets/:id/edit" element={<TicketFormPage />} />
+
+                {/* Admin routes (ADMIN role required) */}
+                <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/admin/users" element={<UsersPage />} />
+                <Route path="/admin/organizations" element={<OrganizationsPage />} />
+                <Route path="/admin/audit-logs" element={<AuditLogsPage />} />
+                <Route path="/admin/analytics" element={<AnalyticsPage />} />
+              </Route>
+            </Route>
+
+            {/* Default redirect */}
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+            {/* 404 Not Found */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          <ToastContainer />
+        </BrowserRouter>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

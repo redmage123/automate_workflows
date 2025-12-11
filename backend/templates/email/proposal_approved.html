@@ -1,0 +1,66 @@
+{#
+Proposal Approved Notification Template
+
+WHAT: Email sent when a client approves a proposal.
+
+WHY: Notifies service provider to begin work and sets expectations.
+
+Variables:
+- user_name: User's display name (service provider)
+- proposal_id: Proposal ID
+- proposal_title: Proposal title
+- project_name: Related project name
+- total_amount: Total proposal amount (formatted)
+- currency: Currency code
+- approved_by: Name of person who approved
+- approved_at: Approval timestamp
+- proposal_url: URL to view proposal
+- project_url: URL to the project
+#}
+{% extends "base.html" %}
+
+{% block title %}Proposal Approved: {{ proposal_title }}{% endblock %}
+
+{% block header %}
+<h1 style="color: #10b981;">&#10003; Proposal Approved</h1>
+{% endblock %}
+
+{% block content %}
+<h2>Great News!</h2>
+
+<p>Hi {{ user_name }},</p>
+
+<p>Your proposal has been approved by <strong>{{ approved_by }}</strong>. You can now proceed with the project.</p>
+
+<dl class="details-list">
+    <dt>Proposal</dt>
+    <dd>{{ proposal_title }}</dd>
+
+    {% if project_name %}
+    <dt>Project</dt>
+    <dd>{{ project_name }}</dd>
+    {% endif %}
+
+    <dt>Approved Amount</dt>
+    <dd style="font-size: 18px; font-weight: 600; color: #10b981;">{{ currency }} {{ total_amount }}</dd>
+
+    <dt>Approved By</dt>
+    <dd>{{ approved_by }}</dd>
+
+    <dt>Approved At</dt>
+    <dd>{{ approved_at }}</dd>
+</dl>
+
+<div class="success-box">
+    <p><strong>Next Steps:</strong><br>
+    The project status has been updated to "Approved". You can now begin work and track progress in the project dashboard.</p>
+</div>
+
+<p style="text-align: center; margin-top: 24px;">
+    {% if project_url %}
+    <a href="{{ project_url }}" class="btn btn-primary">Go to Project</a>
+    {% else %}
+    <a href="{{ proposal_url }}" class="btn btn-primary">View Proposal</a>
+    {% endif %}
+</p>
+{% endblock %}

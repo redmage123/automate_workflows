@@ -19,7 +19,8 @@ from app.core.exception_handlers import (
     generic_exception_handler,
 )
 from app.middleware import SecurityHeadersMiddleware, RequestContextMiddleware, RateLimitMiddleware
-from app.api import auth, organizations, projects, proposals, invoices, workflows, tickets
+from app.api import auth, organizations, projects, proposals, invoices, workflows, tickets, admin, analytics, notification_preferences
+from app.services.scheduler import start_scheduler, shutdown_scheduler, get_scheduler_status
 
 
 def create_app() -> FastAPI:
@@ -90,7 +91,33 @@ def create_app() -> FastAPI:
         WHY: Allows load balancers and monitoring to verify service health
         without checking authentication or database connectivity.
         """
-        return {"status": "healthy", "version": "0.1.0"}
+        scheduler_status = get_scheduler_status()
+        return {
+            "status": "healthy",
+            "version": "0.1.0",
+            "scheduler": scheduler_status,
+        }
+
+    # Startup/shutdown events for background job scheduler
+    @app.on_event("startup")
+    async def startup_event():
+        """
+        Application startup event handler.
+
+        WHY: Starts background job scheduler for:
+        - SLA breach monitoring
+        - Future scheduled tasks
+        """
+        await start_scheduler()
+
+    @app.on_event("shutdown")
+    async def shutdown_event():
+        """
+        Application shutdown event handler.
+
+        WHY: Gracefully stops background jobs to prevent data loss.
+        """
+        await shutdown_scheduler()
 
     # Root endpoint
     @app.get("/", tags=["root"])
@@ -113,6 +140,9 @@ def create_app() -> FastAPI:
     app.include_router(invoices.webhooks_router, prefix="/api")
     app.include_router(workflows.router, prefix="/api")
     app.include_router(tickets.router, prefix="/api")
+    app.include_router(admin.router, prefix="/api")
+    app.include_router(analytics.router, prefix="/api")
+    app.include_router(notification_preferences.router, prefix="/api")
 
     return app
 

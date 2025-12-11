@@ -16,7 +16,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../../store';
 import { getTemplates } from '../../services/workflows';
-import { WorkflowTemplate } from '../../types/workflow';
+import type { WorkflowTemplate } from '../../types/workflow';
 
 /**
  * Category display configuration
@@ -52,7 +52,7 @@ export default function TemplatesPage() {
    */
   const { data, isLoading, error } = useQuery({
     queryKey: ['workflow-templates-library'],
-    queryFn: () => getTemplates(1, 100),
+    queryFn: () => getTemplates({ skip: 0, limit: 100 }),
   });
 
   const templates = data?.items || [];

@@ -16,6 +16,7 @@ from app.dao.workflow_template import WorkflowTemplateDAO
 from app.dao.workflow_instance import WorkflowInstanceDAO
 from app.dao.execution_log import ExecutionLogDAO
 from app.dao.ticket import TicketDAO, TicketCommentDAO, TicketAttachmentDAO
+from app.dao.notification_preference import NotificationPreferenceDAO
 
 __all__ = [
     "BaseDAO",
@@ -31,4 +32,5 @@ __all__ = [
     "TicketDAO",
     "TicketCommentDAO",
     "TicketAttachmentDAO",
+    "NotificationPreferenceDAO",
 ]

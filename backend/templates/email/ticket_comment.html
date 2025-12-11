@@ -1,0 +1,54 @@
+{#
+Ticket Comment Notification Template
+
+WHAT: Email sent when a new comment is added to a ticket.
+
+WHY: Keeps all parties informed of ticket conversation.
+
+Variables:
+- user_name: User's display name
+- ticket_id: Ticket ID number
+- ticket_subject: Ticket subject
+- ticket_url: URL to view ticket
+- comment_author: Name of person who commented
+- comment_author_role: Role of commenter (agent/client)
+- comment_text: The comment content
+- commented_at: Timestamp of comment
+#}
+{% extends "base.html" %}
+
+{% block title %}New Comment on Ticket #{{ ticket_id }}{% endblock %}
+
+{% block content %}
+<h2>New Comment on Ticket #{{ ticket_id }}</h2>
+
+<p>Hi {{ user_name }},</p>
+
+<p>A new comment has been added to your support ticket.</p>
+
+<dl class="details-list">
+    <dt>Ticket</dt>
+    <dd>#{{ ticket_id }}: {{ ticket_subject }}</dd>
+
+    <dt>Comment By</dt>
+    <dd>
+        {{ comment_author }}
+        {% if comment_author_role == 'agent' %}
+        <span style="background-color: #dbeafe; color: #1e40af; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 8px;">Support Agent</span>
+        {% endif %}
+    </dd>
+
+    <dt>Time</dt>
+    <dd>{{ commented_at }}</dd>
+</dl>
+
+<div style="background-color: #f9fafb; border-radius: 8px; padding: 16px; margin: 20px 0; border-left: 4px solid #2563eb;">
+    <p style="margin: 0; white-space: pre-wrap;">{{ comment_text }}</p>
+</div>
+
+<p style="text-align: center;">
+    <a href="{{ ticket_url }}" class="btn btn-primary">View Full Conversation</a>
+</p>
+
+<p style="color: #6b7280; font-size: 14px;">You can reply to this email to add a comment to the ticket.</p>
+{% endblock %}

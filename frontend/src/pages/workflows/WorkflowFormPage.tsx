@@ -13,7 +13,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, type ControllerRenderProps } from 'react-hook-form';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getWorkflowInstance,
@@ -22,7 +22,7 @@ import {
   getTemplates,
 } from '../../services/workflows';
 import { getProjects } from '../../services/projects';
-import { WorkflowInstanceCreate, WorkflowInstanceUpdate, WorkflowTemplate } from '../../types/workflow';
+import type { WorkflowInstanceCreate, WorkflowInstanceUpdate, WorkflowTemplate } from '../../types/workflow';
 
 /**
  * Form data structure
@@ -92,7 +92,7 @@ export default function WorkflowFormPage() {
    */
   const { data: templatesData } = useQuery({
     queryKey: ['workflow-templates'],
-    queryFn: () => getTemplates(1, 100),
+    queryFn: () => getTemplates({ skip: 0, limit: 100 }),
   });
 
   /**
@@ -102,7 +102,7 @@ export default function WorkflowFormPage() {
    */
   const { data: projectsData } = useQuery({
     queryKey: ['projects-for-workflow'],
-    queryFn: () => getProjects(1, 100),
+    queryFn: () => getProjects({ skip: 0, limit: 100 }),
   });
 
   /**
@@ -340,7 +340,7 @@ export default function WorkflowFormPage() {
                 name="config"
                 control={control}
                 rules={{ validate: validateJson }}
-                render={({ field }) => (
+                render={({ field }: { field: ControllerRenderProps<WorkflowFormData, 'config'> }) => (
                   <textarea
                     id="config"
                     rows={8}

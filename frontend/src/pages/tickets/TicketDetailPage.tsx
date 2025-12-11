@@ -20,11 +20,10 @@ import {
   getTicket,
   getTicketSLA,
   changeTicketStatus,
-  assignTicket,
   addComment,
   deleteComment,
 } from '../../services/tickets';
-import type { TicketStatus, TicketPriority } from '../../types';
+import type { TicketStatus } from '../../types';
 import {
   TICKET_STATUS_CONFIG,
   TICKET_PRIORITY_CONFIG,
@@ -118,13 +117,14 @@ export default function TicketDetailPage() {
     enabled: !!id,
   });
 
-  // Fetch SLA status
-  const { data: slaStatus } = useQuery({
+  // Fetch SLA status (for future SLA display feature)
+  const { data: _slaStatus } = useQuery({
     queryKey: ['ticket-sla', id],
     queryFn: () => getTicketSLA(Number(id)),
     enabled: !!id,
     refetchInterval: 60000, // Refresh every minute
   });
+  void _slaStatus; // SLA display feature to be implemented
 
   // Change status mutation
   const statusMutation = useMutation({
