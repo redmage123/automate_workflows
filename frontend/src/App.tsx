@@ -40,6 +40,15 @@ import { ClientOnboardingPage } from './pages/onboarding';
 // Invoice pages
 import { InvoicesPage, InvoiceDetailPage } from './pages/invoices';
 
+// Workflow pages
+import {
+  WorkflowsPage,
+  WorkflowDetailPage,
+  WorkflowFormPage,
+  TemplatesPage,
+  EnvironmentsPage,
+} from './pages/workflows';
+
 /**
  * React Query client
  *
@@ -168,8 +177,15 @@ function App() {
               <Route path="/invoices" element={<InvoicesPage />} />
               <Route path="/invoices/:id" element={<InvoiceDetailPage />} />
 
+              {/* Workflow routes */}
+              <Route path="/workflows" element={<WorkflowsPage />} />
+              <Route path="/workflows/new" element={<WorkflowFormPage />} />
+              <Route path="/workflows/templates" element={<TemplatesPage />} />
+              <Route path="/workflows/environment" element={<EnvironmentsPage />} />
+              <Route path="/workflows/:id" element={<WorkflowDetailPage />} />
+              <Route path="/workflows/:id/edit" element={<WorkflowFormPage />} />
+
               {/* Future routes */}
-              {/* <Route path="/workflows" element={<WorkflowList />} /> */}
               {/* <Route path="/tickets" element={<TicketList />} /> */}
             </Route>
           </Route>

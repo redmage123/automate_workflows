@@ -651,3 +651,283 @@ class InvoiceFactory:
         """Create an invoice from an approved proposal."""
         invoice_dao = InvoiceDAO(session)
         return await invoice_dao.create_from_proposal(proposal, due_days=due_days)
+
+
+class N8nEnvironmentFactory:
+    """
+    Factory for creating N8nEnvironment test instances.
+
+    WHY: Centralizes n8n environment creation logic for tests,
+    handling API key encryption automatically.
+    """
+
+    @staticmethod
+    async def create(
+        session: AsyncSession,
+        name: str = "Test n8n Environment",
+        base_url: str = "https://n8n.example.com",
+        api_key: str = "test-api-key-12345",
+        webhook_url: Optional[str] = None,
+        is_active: bool = True,
+        org_id: Optional[int] = None,
+        organization: Optional[Organization] = None,
+    ):
+        """
+        Create an n8n environment for testing.
+
+        Args:
+            session: Database session
+            name: Environment name
+            base_url: n8n instance URL
+            api_key: API key (will be encrypted)
+            webhook_url: Optional webhook URL
+            is_active: Whether environment is active
+            org_id: Organization ID
+            organization: Organization instance
+
+        Returns:
+            Created N8nEnvironment instance
+        """
+        from app.dao.n8n_environment import N8nEnvironmentDAO
+
+        # Create organization if not provided
+        if organization is None and org_id is None:
+            organization = await OrganizationFactory.create(session, name=f"Org for {name}")
+            org_id = organization.id
+        elif organization is not None:
+            org_id = organization.id
+
+        env_dao = N8nEnvironmentDAO(session)
+        return await env_dao.create_environment(
+            org_id=org_id,
+            name=name,
+            base_url=base_url,
+            api_key=api_key,
+            webhook_url=webhook_url,
+            is_active=is_active,
+        )
+
+
+class WorkflowTemplateFactory:
+    """
+    Factory for creating WorkflowTemplate test instances.
+
+    WHY: Centralizes template creation logic for tests.
+    """
+
+    @staticmethod
+    async def create(
+        session: AsyncSession,
+        name: str = "Test Template",
+        description: Optional[str] = None,
+        category: Optional[str] = None,
+        n8n_template_id: Optional[str] = None,
+        default_parameters: Optional[dict] = None,
+        is_public: bool = True,
+        created_by_org_id: Optional[int] = None,
+        organization: Optional[Organization] = None,
+    ):
+        """
+        Create a workflow template for testing.
+
+        Args:
+            session: Database session
+            name: Template name
+            description: Template description
+            category: Template category
+            n8n_template_id: n8n template ID
+            default_parameters: Default parameters
+            is_public: Whether template is public
+            created_by_org_id: Creating organization ID
+            organization: Organization instance
+
+        Returns:
+            Created WorkflowTemplate instance
+        """
+        from app.dao.workflow_template import WorkflowTemplateDAO
+
+        # Handle organization for private templates
+        if organization is not None:
+            created_by_org_id = organization.id
+
+        template_dao = WorkflowTemplateDAO(session)
+        return await template_dao.create_template(
+            name=name,
+            description=description or f"Description for {name}",
+            category=category,
+            n8n_template_id=n8n_template_id,
+            default_parameters=default_parameters,
+            is_public=is_public,
+            created_by_org_id=created_by_org_id,
+        )
+
+    @staticmethod
+    async def create_private(
+        session: AsyncSession,
+        name: str = "Private Template",
+        organization: Optional[Organization] = None,
+        **kwargs,
+    ):
+        """Create a private template for an organization."""
+        if organization is None:
+            organization = await OrganizationFactory.create(session, name=f"Org for {name}")
+
+        return await WorkflowTemplateFactory.create(
+            session=session,
+            name=name,
+            is_public=False,
+            organization=organization,
+            **kwargs,
+        )
+
+
+class WorkflowInstanceFactory:
+    """
+    Factory for creating WorkflowInstance test instances.
+
+    WHY: Centralizes workflow instance creation logic for tests.
+    """
+
+    @staticmethod
+    async def create(
+        session: AsyncSession,
+        name: str = "Test Workflow Instance",
+        org_id: Optional[int] = None,
+        organization: Optional[Organization] = None,
+        project_id: Optional[int] = None,
+        project: Optional[Project] = None,
+        template_id: Optional[int] = None,
+        n8n_environment_id: Optional[int] = None,
+        n8n_workflow_id: Optional[str] = None,
+        parameters: Optional[dict] = None,
+        status=None,
+    ):
+        """
+        Create a workflow instance for testing.
+
+        Args:
+            session: Database session
+            name: Instance name
+            org_id: Organization ID
+            organization: Organization instance
+            project_id: Project ID
+            project: Project instance
+            template_id: Template ID
+            n8n_environment_id: n8n environment ID
+            n8n_workflow_id: n8n workflow ID
+            parameters: Custom parameters
+            status: Workflow status
+
+        Returns:
+            Created WorkflowInstance instance
+        """
+        from app.dao.workflow_instance import WorkflowInstanceDAO
+        from app.models.workflow import WorkflowStatus
+
+        # Handle organization
+        if organization is None and org_id is None:
+            organization = await OrganizationFactory.create(session, name=f"Org for {name}")
+            org_id = organization.id
+        elif organization is not None:
+            org_id = organization.id
+
+        # Handle project
+        if project is not None:
+            project_id = project.id
+
+        instance_dao = WorkflowInstanceDAO(session)
+        return await instance_dao.create_instance(
+            org_id=org_id,
+            name=name,
+            template_id=template_id,
+            project_id=project_id,
+            n8n_environment_id=n8n_environment_id,
+            n8n_workflow_id=n8n_workflow_id,
+            parameters=parameters,
+            status=status or WorkflowStatus.DRAFT,
+        )
+
+    @staticmethod
+    async def create_active(
+        session: AsyncSession,
+        name: str = "Active Workflow",
+        organization: Optional[Organization] = None,
+        **kwargs,
+    ):
+        """Create an active workflow instance."""
+        from app.models.workflow import WorkflowStatus
+
+        return await WorkflowInstanceFactory.create(
+            session=session,
+            name=name,
+            organization=organization,
+            status=WorkflowStatus.ACTIVE,
+            n8n_workflow_id="n8n-test-workflow-id",
+            **kwargs,
+        )
+
+
+class ExecutionLogFactory:
+    """
+    Factory for creating ExecutionLog test instances.
+
+    WHY: Centralizes execution log creation logic for tests.
+    """
+
+    @staticmethod
+    async def create(
+        session: AsyncSession,
+        workflow_instance_id: int,
+        n8n_execution_id: Optional[str] = None,
+        status=None,
+        input_data: Optional[dict] = None,
+    ):
+        """
+        Create an execution log for testing.
+
+        Args:
+            session: Database session
+            workflow_instance_id: Workflow instance ID
+            n8n_execution_id: n8n execution ID
+            status: Execution status
+            input_data: Input data
+
+        Returns:
+            Created ExecutionLog instance
+        """
+        from app.dao.execution_log import ExecutionLogDAO
+        from app.models.workflow import ExecutionStatus
+
+        log_dao = ExecutionLogDAO(session)
+        return await log_dao.create_log(
+            workflow_instance_id=workflow_instance_id,
+            n8n_execution_id=n8n_execution_id or f"exec-{workflow_instance_id}-test",
+            status=status or ExecutionStatus.RUNNING,
+            input_data=input_data,
+        )
+
+    @staticmethod
+    async def create_completed(
+        session: AsyncSession,
+        workflow_instance_id: int,
+        success: bool = True,
+        output_data: Optional[dict] = None,
+        error_message: Optional[str] = None,
+    ):
+        """Create a completed execution log."""
+        from app.dao.execution_log import ExecutionLogDAO
+        from app.models.workflow import ExecutionStatus
+
+        log = await ExecutionLogFactory.create(
+            session=session,
+            workflow_instance_id=workflow_instance_id,
+        )
+
+        log_dao = ExecutionLogDAO(session)
+        status = ExecutionStatus.SUCCESS if success else ExecutionStatus.FAILED
+        return await log_dao.complete_execution(
+            log_id=log.id,
+            status=status,
+            output_data=output_data,
+            error_message=error_message,
+        )

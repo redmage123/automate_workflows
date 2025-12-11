@@ -35,6 +35,7 @@ from app.models.base import Base
 if TYPE_CHECKING:
     from app.models.organization import Organization
     from app.models.proposal import Proposal
+    from app.models.workflow import WorkflowInstance
 
 
 class ProjectStatus(str, Enum):
@@ -202,6 +203,10 @@ class Project(Base):
         "Proposal",
         back_populates="project",
         cascade="all, delete-orphan",
+    )
+    workflow_instances: Mapped[list["WorkflowInstance"]] = relationship(
+        "WorkflowInstance",
+        back_populates="project",
     )
 
     def __repr__(self) -> str:

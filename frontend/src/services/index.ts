@@ -16,3 +16,4 @@ export type { UpdateOrganizationRequest } from './organization';
 export * from './projects';
 export * from './proposals';
 export * from './invoices';
+export * from './workflows';

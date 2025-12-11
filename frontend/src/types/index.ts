@@ -13,6 +13,7 @@ export * from './common';
 export * from './auth';
 export * from './project';
 export * from './proposal';
+export * from './workflow';
 // Exclude formatCurrency from invoice to avoid duplicate export with proposal
 export {
   type Invoice,

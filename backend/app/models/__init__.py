@@ -13,17 +13,17 @@ from app.models.verification_token import VerificationToken, TokenType
 from app.models.project import Project, ProjectStatus, ProjectPriority
 from app.models.proposal import Proposal, ProposalStatus
 from app.models.invoice import Invoice, InvoiceStatus
+from app.models.workflow import (
+    N8nEnvironment,
+    WorkflowTemplate,
+    WorkflowInstance,
+    WorkflowStatus,
+    ExecutionLog,
+    ExecutionStatus,
+)
 
 # TODO: Import additional models as they are created
 # from app.models.ticket import Ticket, TicketStatus, TicketPriority
-# from app.models.workflow import (
-#     WorkflowTemplate,
-#     WorkflowInstance,
-#     WorkflowInstanceStatus,
-#     ExecutionLog,
-#     ExecutionStatus,
-# )
-# from app.models.n8n_environment import N8nEnvironment
 
 __all__ = [
     "Base",
@@ -43,5 +43,10 @@ __all__ = [
     "ProposalStatus",
     "Invoice",
     "InvoiceStatus",
-    # Add additional models here as they are created
+    "N8nEnvironment",
+    "WorkflowTemplate",
+    "WorkflowInstance",
+    "WorkflowStatus",
+    "ExecutionLog",
+    "ExecutionStatus",
 ]

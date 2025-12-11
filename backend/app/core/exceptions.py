@@ -461,3 +461,23 @@ class AuditLogImmutableError(AppException):
 
     status_code = 403
     default_message = "Audit logs are immutable and cannot be modified"
+
+
+# ============================================================================
+# Encryption Exceptions (OWASP A02: Cryptographic Failures)
+# ============================================================================
+
+
+class EncryptionError(AppException):
+    """
+    Raised when encryption or decryption operations fail.
+
+    WHY: Encryption failures should not expose sensitive information.
+    Error messages must be generic to prevent information leakage
+    about the encryption scheme or key status.
+
+    HTTP Status: 500 Internal Server Error
+    """
+
+    status_code = 500
+    default_message = "Encryption operation failed"

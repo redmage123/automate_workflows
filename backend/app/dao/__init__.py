@@ -11,5 +11,20 @@ from app.dao.audit_log import AuditLogDAO
 from app.dao.project import ProjectDAO
 from app.dao.proposal import ProposalDAO
 from app.dao.invoice import InvoiceDAO
+from app.dao.n8n_environment import N8nEnvironmentDAO
+from app.dao.workflow_template import WorkflowTemplateDAO
+from app.dao.workflow_instance import WorkflowInstanceDAO
+from app.dao.execution_log import ExecutionLogDAO
 
-__all__ = ["BaseDAO", "UserDAO", "AuditLogDAO", "ProjectDAO", "ProposalDAO", "InvoiceDAO"]
+__all__ = [
+    "BaseDAO",
+    "UserDAO",
+    "AuditLogDAO",
+    "ProjectDAO",
+    "ProposalDAO",
+    "InvoiceDAO",
+    "N8nEnvironmentDAO",
+    "WorkflowTemplateDAO",
+    "WorkflowInstanceDAO",
+    "ExecutionLogDAO",
+]
