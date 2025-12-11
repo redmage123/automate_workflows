@@ -1,8 +1,8 @@
 # Master Kanban Board - Automation Services Platform
 
 **Last Updated:** 2025-12-11
-**Current Sprint**: Sprint 6 (Ticketing & Notifications)
-**Sprint Velocity**: Sprint 1: 67pts | Sprint 2: 26/31pts | Sprint 3: 79pts | Sprint 4: 71pts | Sprint 5: 80pts
+**Current Sprint**: Sprint 7 (Admin Portal & Analytics)
+**Sprint Velocity**: Sprint 1: 67pts | Sprint 2: 26/31pts | Sprint 3: 79pts | Sprint 4: 71pts | Sprint 5: 82pts | Sprint 6: 41pts
 
 ## Legend
 
@@ -195,36 +195,37 @@
 
 ---
 
-## Sprint 6: Ticketing & Notifications (Current)
+## Sprint 6: Ticketing & Notifications ✅ COMPLETE
 
 **Sprint Goal**: Support ticketing system with SLA tracking and notifications.
 
-**Started**: 2025-12-11
+**Completed**: 2025-12-11
 
-| ID | Feature | Sub-Board | Effort | Status | Dependencies |
-|----|---------|-----------|--------|--------|--------------|
-| TICKET-001 | Ticket model + DAO | client-portal.md | 5 | 🟡 | PROJ-001 |
-| TICKET-002 | Create ticket endpoint | client-portal.md | 3 | ⚪ | TICKET-001 |
-| TICKET-003 | Update ticket endpoint | client-portal.md | 3 | ⚪ | TICKET-001 |
-| TICKET-004 | List tickets endpoint | client-portal.md | 3 | ⚪ | TICKET-001 |
-| TICKET-005 | SLA timer calculation | client-portal.md | 5 | ⚪ | TICKET-001 |
-| TICKET-006 | SLA breach background job | client-portal.md | 8 | ⚪ | TICKET-005 |
-| TICKET-007 | Ticket list UI | client-portal.md | 5 | ⚪ | TICKET-004 |
-| TICKET-008 | Ticket detail/edit UI | client-portal.md | 5 | ⚪ | TICKET-002 |
-| NOTIFY-002 | Email templates | notifications.md | 5 | ⚪ | NOTIFY-001 |
-| NOTIFY-003 | Slack webhook integration | notifications.md | 3 | ⚪ | - |
-| NOTIFY-004 | Notification preferences | notifications.md | 3 | ⚪ | AUTH-001 |
-| ADR-005 | Ticketing System ADR | docs/adr | 2 | ⚪ | - |
+| ID | Feature | Sub-Board | Effort | Status | Notes |
+|----|---------|-----------|--------|--------|-------|
+| TICKET-001 | Ticket model + DAO | client-portal.md | 5 | 🟢 | 25 unit tests |
+| TICKET-002 | Create ticket endpoint | client-portal.md | 3 | 🟢 | With SLA auto-calc |
+| TICKET-003 | Update ticket endpoint | client-portal.md | 3 | 🟢 | Status, assign, comments |
+| TICKET-004 | List tickets endpoint | client-portal.md | 3 | 🟢 | Filters, pagination |
+| TICKET-005 | SLA timer calculation | client-portal.md | 5 | 🟢 | SLAService with warnings |
+| TICKET-006 | SLA at-risk endpoint | client-portal.md | 5 | 🟢 | Breached + warning lists |
+| TICKET-007 | Ticket list UI | client-portal.md | 5 | 🟢 | Status badges, SLA indicators |
+| TICKET-008 | Ticket detail/edit UI | client-portal.md | 5 | 🟢 | Comments, assignment |
+| NOTIFY-003 | Slack webhook integration | notifications.md | 3 | 🟢 | Block Kit formatting, 41 tests |
+| ADR-005 | Ticketing System ADR | docs/adr | 2 | 🟢 | Architecture documented |
+| ADR-006 | Notification System ADR | docs/adr | 2 | 🟢 | Slack integration design |
 
-**Sprint 6 Total**: 50 points | **Completed**: 0 points
+**Sprint 6 Total**: 41 points | **Completed**: 41 points
 
-Note: NOTIFY-001 (Email service) was completed in Sprint 2.
+Note: NOTIFY-001 (Email service) was completed in Sprint 2. NOTIFY-002 (Email templates) and NOTIFY-004 (Notification preferences) moved to backlog.
 
 ---
 
-## Sprint 7: Admin Portal & Analytics
+## Sprint 7: Admin Portal & Analytics (Current)
 
 **Sprint Goal**: Admin tools and business analytics dashboard.
+
+**Started**: 2025-12-11
 
 | ID | Feature | Sub-Board | Effort | Status | Dependencies |
 |----|---------|-----------|--------|--------|--------------|
@@ -241,7 +242,7 @@ Note: NOTIFY-001 (Email service) was completed in Sprint 2.
 | POLISH-002 | Loading states | Frontend | 5 | ⚪ | - |
 | POLISH-003 | Toast notifications | Frontend | 3 | ⚪ | - |
 
-**Sprint 7 Total**: 73 points
+**Sprint 7 Total**: 73 points | **Completed**: 0 points
 
 ---
 
@@ -249,6 +250,11 @@ Note: NOTIFY-001 (Email service) was completed in Sprint 2.
 
 | ID | Feature | Effort | Priority |
 |----|---------|--------|----------|
+| NOTIFY-002 | Email templates | 5 | P2 |
+| NOTIFY-004 | Notification preferences | 3 | P2 |
+| TICKET-BG | SLA breach background job | 8 | P2 |
+| AUTH-010 | OAuth (Google) integration | 13 | P2 |
+| PAY-010 | Subscription management | 13 | P2 |
 | RUST-001 | Rust webhook gateway | 21 | P3 |
 | RUST-002 | Rust secrets proxy | 21 | P3 |
 | SSO-001 | SAML/OIDC integration | 21 | P3 |
@@ -256,8 +262,6 @@ Note: NOTIFY-001 (Email service) was completed in Sprint 2.
 | BUDGET-001 | Workflow run budgets | 8 | P3 |
 | WIDGET-001 | Client embedded widget | 13 | P3 |
 | GRAFANA-001 | Grafana dashboard | 8 | P3 |
-| AUTH-010 | OAuth (Google) integration | 13 | P2 |
-| PAY-010 | Subscription management | 13 | P2 |
 
 ---
 
@@ -270,11 +274,11 @@ Note: NOTIFY-001 (Email service) was completed in Sprint 2.
 | Sprint 3 | Projects & Proposals | 79 | 🟢 Complete |
 | Sprint 4 | Billing & Payments | 71 | 🟢 Complete |
 | Sprint 5 | Workflow Automation | 82 | 🟢 Complete |
-| Sprint 6 | Ticketing & Notifications | 50 | 🟡 In Progress |
-| Sprint 7 | Admin & Analytics | 73 | ⚪ Planned |
-| **MVP Total** | | **453 points** | ~4-5 months |
+| Sprint 6 | Ticketing & Notifications | 41 | 🟢 Complete |
+| Sprint 7 | Admin & Analytics | 73 | 🟡 In Progress |
+| **MVP Total** | | **444 points** | ~4-5 months |
 
-**Completed**: 330 points (73% of MVP)
+**Completed**: 371 points (84% of MVP)
 
 ---
 
