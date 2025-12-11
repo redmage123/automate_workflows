@@ -15,6 +15,7 @@ from app.dao.n8n_environment import N8nEnvironmentDAO
 from app.dao.workflow_template import WorkflowTemplateDAO
 from app.dao.workflow_instance import WorkflowInstanceDAO
 from app.dao.execution_log import ExecutionLogDAO
+from app.dao.ticket import TicketDAO, TicketCommentDAO, TicketAttachmentDAO
 
 __all__ = [
     "BaseDAO",
@@ -27,4 +28,7 @@ __all__ = [
     "WorkflowTemplateDAO",
     "WorkflowInstanceDAO",
     "ExecutionLogDAO",
+    "TicketDAO",
+    "TicketCommentDAO",
+    "TicketAttachmentDAO",
 ]

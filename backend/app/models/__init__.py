@@ -21,9 +21,15 @@ from app.models.workflow import (
     ExecutionLog,
     ExecutionStatus,
 )
-
-# TODO: Import additional models as they are created
-# from app.models.ticket import Ticket, TicketStatus, TicketPriority
+from app.models.ticket import (
+    Ticket,
+    TicketStatus,
+    TicketPriority,
+    TicketCategory,
+    TicketComment,
+    TicketAttachment,
+    SLA_CONFIG,
+)
 
 __all__ = [
     "Base",
@@ -49,4 +55,11 @@ __all__ = [
     "WorkflowStatus",
     "ExecutionLog",
     "ExecutionStatus",
+    "Ticket",
+    "TicketStatus",
+    "TicketPriority",
+    "TicketCategory",
+    "TicketComment",
+    "TicketAttachment",
+    "SLA_CONFIG",
 ]

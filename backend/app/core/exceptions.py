@@ -336,6 +336,19 @@ class EmailServiceError(ExternalServiceError):
     default_message = "Email service error"
 
 
+class SlackNotificationError(ExternalServiceError):
+    """
+    Raised when Slack webhook calls fail.
+
+    WHY: Slack notification failures should be logged and not block
+    the main operation. Notifications are best-effort delivery.
+
+    HTTP Status: 502 Bad Gateway
+    """
+
+    default_message = "Slack notification error"
+
+
 # ============================================================================
 # Database Exceptions
 # ============================================================================

@@ -36,6 +36,7 @@ if TYPE_CHECKING:
     from app.models.organization import Organization
     from app.models.proposal import Proposal
     from app.models.workflow import WorkflowInstance
+    from app.models.ticket import Ticket
 
 
 class ProjectStatus(str, Enum):
@@ -206,6 +207,10 @@ class Project(Base):
     )
     workflow_instances: Mapped[list["WorkflowInstance"]] = relationship(
         "WorkflowInstance",
+        back_populates="project",
+    )
+    tickets: Mapped[list["Ticket"]] = relationship(
+        "Ticket",
         back_populates="project",
     )
 

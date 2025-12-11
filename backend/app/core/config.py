@@ -51,6 +51,10 @@ class Settings(BaseSettings):
     N8N_DEFAULT_BASE_URL: str = "http://localhost:5678"
     N8N_DEFAULT_API_KEY: str = ""
 
+    # Slack Notifications
+    SLACK_WEBHOOK_URL: Optional[str] = None
+    SLACK_WEBHOOK_ENABLED: bool = False
+
     # Observability
     SENTRY_DSN: Optional[str] = None
 

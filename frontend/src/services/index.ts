@@ -17,3 +17,4 @@ export * from './projects';
 export * from './proposals';
 export * from './invoices';
 export * from './workflows';
+export * from './tickets';

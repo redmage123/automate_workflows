@@ -99,11 +99,11 @@ export type InvoiceStatus = (typeof InvoiceStatus)[keyof typeof InvoiceStatus];
  * WHY: Support tickets follow a standard helpdesk workflow.
  */
 export const TicketStatus = {
-  OPEN: 'OPEN',
-  IN_PROGRESS: 'IN_PROGRESS',
-  WAITING: 'WAITING',
-  RESOLVED: 'RESOLVED',
-  CLOSED: 'CLOSED',
+  OPEN: 'open',
+  IN_PROGRESS: 'in_progress',
+  WAITING: 'waiting',
+  RESOLVED: 'resolved',
+  CLOSED: 'closed',
 } as const;
 
 export type TicketStatus = (typeof TicketStatus)[keyof typeof TicketStatus];
@@ -114,13 +114,28 @@ export type TicketStatus = (typeof TicketStatus)[keyof typeof TicketStatus];
  * WHY: Priority determines SLA response/resolution times.
  */
 export const TicketPriority = {
-  LOW: 'LOW',
-  MEDIUM: 'MEDIUM',
-  HIGH: 'HIGH',
-  URGENT: 'URGENT',
+  LOW: 'low',
+  MEDIUM: 'medium',
+  HIGH: 'high',
+  URGENT: 'urgent',
 } as const;
 
 export type TicketPriority = (typeof TicketPriority)[keyof typeof TicketPriority];
+
+/**
+ * Ticket category values
+ *
+ * WHY: Categories help with routing and reporting.
+ */
+export const TicketCategory = {
+  GENERAL: 'general',
+  BUG: 'bug',
+  FEATURE: 'feature',
+  QUESTION: 'question',
+  SUPPORT: 'support',
+} as const;
+
+export type TicketCategory = (typeof TicketCategory)[keyof typeof TicketCategory];
 
 /**
  * Workflow status values

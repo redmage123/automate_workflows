@@ -49,6 +49,9 @@ import {
   EnvironmentsPage,
 } from './pages/workflows';
 
+// Ticket pages
+import { TicketsPage, TicketDetailPage, TicketFormPage } from './pages/tickets';
+
 /**
  * React Query client
  *
@@ -185,8 +188,11 @@ function App() {
               <Route path="/workflows/:id" element={<WorkflowDetailPage />} />
               <Route path="/workflows/:id/edit" element={<WorkflowFormPage />} />
 
-              {/* Future routes */}
-              {/* <Route path="/tickets" element={<TicketList />} /> */}
+              {/* Ticket routes */}
+              <Route path="/tickets" element={<TicketsPage />} />
+              <Route path="/tickets/new" element={<TicketFormPage />} />
+              <Route path="/tickets/:id" element={<TicketDetailPage />} />
+              <Route path="/tickets/:id/edit" element={<TicketFormPage />} />
             </Route>
           </Route>
 

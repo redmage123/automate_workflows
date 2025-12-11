@@ -1,8 +1,8 @@
 # Master Kanban Board - Automation Services Platform
 
 **Last Updated:** 2025-12-11
-**Current Sprint**: Sprint 3 (Projects & Proposals) - COMPLETE
-**Sprint Velocity**: Sprint 1: 67pts | Sprint 2: 26/31pts | Sprint 3: 79pts
+**Current Sprint**: Sprint 6 (Ticketing & Notifications)
+**Sprint Velocity**: Sprint 1: 67pts | Sprint 2: 26/31pts | Sprint 3: 79pts | Sprint 4: 71pts | Sprint 5: 80pts
 
 ## Legend
 
@@ -141,62 +141,69 @@
 
 ---
 
-## Sprint 4: Billing & Payments
+## Sprint 4: Billing & Payments ✅ COMPLETE
 
 **Sprint Goal**: Stripe integration for payments and invoice management.
 
-| ID | Feature | Sub-Board | Effort | Status | Dependencies |
-|----|---------|-----------|--------|--------|--------------|
-| PAY-001 | Invoice model + DAO | billing-payments.md | 3 | ⚪ | PROJ-001 |
-| PAY-002 | Stripe service setup | billing-payments.md | 5 | ⚪ | - |
-| PAY-003 | Stripe customer creation | billing-payments.md | 3 | ⚪ | ORG-001, PAY-002 |
-| PAY-004 | Checkout session endpoint | billing-payments.md | 8 | ⚪ | PAY-002, PROP-001 |
-| PAY-005 | Stripe webhook handler | billing-payments.md | 13 | ⚪ | PAY-002, PAY-001 |
-| PAY-006 | Webhook signature verification | billing-payments.md | 3 | ⚪ | PAY-005 |
-| PAY-007 | Invoice generation on payment | billing-payments.md | 5 | ⚪ | PAY-005 |
-| PAY-008 | Payment UI (checkout flow) | billing-payments.md | 8 | ⚪ | PAY-004 |
-| PAY-009 | Invoice list/detail UI | billing-payments.md | 5 | ⚪ | PAY-001 |
-| PDF-001 | PDF generation service | billing-payments.md | 8 | ⚪ | PROP-001 |
-| PDF-002 | Proposal PDF template | billing-payments.md | 5 | ⚪ | PDF-001 |
-| PDF-003 | Invoice PDF template | billing-payments.md | 5 | ⚪ | PDF-001 |
+**Completed**: 2025-12-11
 
-**Sprint 4 Total**: 71 points
+| ID | Feature | Sub-Board | Effort | Status | Notes |
+|----|---------|-----------|--------|--------|-------|
+| PAY-001 | Invoice model + DAO | billing-payments.md | 3 | 🟢 | Full CRUD with org-scoping |
+| PAY-002 | Stripe service setup | billing-payments.md | 5 | 🟢 | Async client with error handling |
+| PAY-003 | Stripe customer creation | billing-payments.md | 3 | 🟢 | Auto-create on org creation |
+| PAY-004 | Checkout session endpoint | billing-payments.md | 8 | 🟢 | Proposal-to-checkout flow |
+| PAY-005 | Stripe webhook handler | billing-payments.md | 13 | 🟢 | payment_intent.succeeded handling |
+| PAY-006 | Webhook signature verification | billing-payments.md | 3 | 🟢 | HMAC verification |
+| PAY-007 | Invoice generation on payment | billing-payments.md | 5 | 🟢 | Auto-invoice on payment success |
+| PAY-008 | Payment UI (checkout flow) | billing-payments.md | 8 | 🟢 | Stripe Elements integration |
+| PAY-009 | Invoice list/detail UI | billing-payments.md | 5 | 🟢 | With status filters |
+| PDF-001 | PDF generation service | billing-payments.md | 8 | 🟢 | ReportLab-based |
+| PDF-002 | Proposal PDF template | billing-payments.md | 5 | 🟢 | Professional template |
+| PDF-003 | Invoice PDF template | billing-payments.md | 5 | 🟢 | With line items |
+
+**Sprint 4 Total**: 71 points | **Completed**: 71 points
 
 ---
 
-## Sprint 5: Workflow Automation
+## Sprint 5: Workflow Automation ✅ COMPLETE
 
 **Sprint Goal**: n8n integration for workflow management.
 
-| ID | Feature | Sub-Board | Effort | Status | Dependencies |
-|----|---------|-----------|--------|--------|--------------|
-| N8N-001 | N8nEnvironment model + DAO | workflows.md | 3 | ⚪ | - |
-| N8N-002 | n8n API client service | workflows.md | 8 | ⚪ | - |
-| N8N-003 | Encryption service (Fernet) | workflows.md | 5 | ⚪ | - |
-| N8N-004 | API key encryption/decryption | workflows.md | 3 | ⚪ | N8N-003 |
-| N8N-005 | CRUD n8n environments (admin) | admin-portal.md | 5 | ⚪ | N8N-001 |
-| WF-001 | WorkflowTemplate model + DAO | workflows.md | 3 | ⚪ | - |
-| WF-002 | WorkflowInstance model + DAO | workflows.md | 5 | ⚪ | PROJ-001, WF-001 |
-| WF-003 | ExecutionLog model + DAO | workflows.md | 3 | ⚪ | WF-002 |
-| WF-004 | Template library seed data | workflows.md | 5 | ⚪ | WF-001 |
-| WF-005 | Create workflow from template | workflows.md | 8 | ⚪ | WF-002, N8N-002 |
-| WF-006 | Trigger workflow execution | workflows.md | 8 | ⚪ | WF-002, N8N-002 |
-| WF-007 | n8n webhook receiver | workflows.md | 8 | ⚪ | WF-003 |
-| WF-008 | Execution log storage | workflows.md | 3 | ⚪ | WF-007 |
-| WF-009 | Template library UI | workflows.md | 8 | ⚪ | WF-001 |
-| WF-010 | Workflow instance list UI | workflows.md | 5 | ⚪ | WF-002 |
+**Completed**: 2025-12-11
 
-**Sprint 5 Total**: 80 points
+| ID | Feature | Sub-Board | Effort | Status | Notes |
+|----|---------|-----------|--------|--------|-------|
+| N8N-001 | N8nEnvironment model + DAO | workflows.md | 3 | 🟢 | Per-org n8n config |
+| N8N-002 | n8n API client service | workflows.md | 8 | 🟢 | Async with SSRF prevention |
+| N8N-003 | Encryption service (Fernet) | workflows.md | 5 | 🟢 | OWASP A02 compliant |
+| N8N-004 | API key encryption/decryption | workflows.md | 3 | 🟢 | Transparent in DAO |
+| N8N-005 | CRUD n8n environments (admin) | admin-portal.md | 5 | 🟢 | Full API + UI |
+| WF-001 | WorkflowTemplate model + DAO | workflows.md | 3 | 🟢 | Public/private visibility |
+| WF-002 | WorkflowInstance model + DAO | workflows.md | 5 | 🟢 | Project-linked |
+| WF-003 | ExecutionLog model + DAO | workflows.md | 3 | 🟢 | Append-only audit |
+| WF-004 | Template library seed data | workflows.md | 5 | 🟢 | Category-based |
+| WF-005 | Create workflow from template | workflows.md | 8 | 🟢 | Config inheritance |
+| WF-006 | Trigger workflow execution | workflows.md | 8 | 🟢 | Manual + API trigger |
+| WF-007 | n8n webhook receiver | workflows.md | 8 | 🟢 | Signature validation |
+| WF-008 | Execution log storage | workflows.md | 3 | 🟢 | With metrics |
+| WF-009 | Template library UI | workflows.md | 8 | 🟢 | Category browser |
+| WF-010 | Workflow instance list UI | workflows.md | 5 | 🟢 | Status filters, detail page |
+| ADR-004 | Workflow Automation ADR | docs/adr | 2 | 🟢 | Architecture documented |
+
+**Sprint 5 Total**: 82 points | **Completed**: 82 points
 
 ---
 
-## Sprint 6: Ticketing & Notifications
+## Sprint 6: Ticketing & Notifications (Current)
 
 **Sprint Goal**: Support ticketing system with SLA tracking and notifications.
 
+**Started**: 2025-12-11
+
 | ID | Feature | Sub-Board | Effort | Status | Dependencies |
 |----|---------|-----------|--------|--------|--------------|
-| TICKET-001 | Ticket model + DAO | client-portal.md | 5 | ⚪ | PROJ-001 |
+| TICKET-001 | Ticket model + DAO | client-portal.md | 5 | 🟡 | PROJ-001 |
 | TICKET-002 | Create ticket endpoint | client-portal.md | 3 | ⚪ | TICKET-001 |
 | TICKET-003 | Update ticket endpoint | client-portal.md | 3 | ⚪ | TICKET-001 |
 | TICKET-004 | List tickets endpoint | client-portal.md | 3 | ⚪ | TICKET-001 |
@@ -204,12 +211,14 @@
 | TICKET-006 | SLA breach background job | client-portal.md | 8 | ⚪ | TICKET-005 |
 | TICKET-007 | Ticket list UI | client-portal.md | 5 | ⚪ | TICKET-004 |
 | TICKET-008 | Ticket detail/edit UI | client-portal.md | 5 | ⚪ | TICKET-002 |
-| NOTIFY-001 | Email service (Resend) | notifications.md | 5 | ⚪ | - |
 | NOTIFY-002 | Email templates | notifications.md | 5 | ⚪ | NOTIFY-001 |
 | NOTIFY-003 | Slack webhook integration | notifications.md | 3 | ⚪ | - |
 | NOTIFY-004 | Notification preferences | notifications.md | 3 | ⚪ | AUTH-001 |
+| ADR-005 | Ticketing System ADR | docs/adr | 2 | ⚪ | - |
 
-**Sprint 6 Total**: 53 points
+**Sprint 6 Total**: 50 points | **Completed**: 0 points
+
+Note: NOTIFY-001 (Email service) was completed in Sprint 2.
 
 ---
 
@@ -257,13 +266,15 @@
 | Sprint | Focus | Points | Status |
 |--------|-------|--------|--------|
 | Sprint 1 | Foundation | 67 | 🟢 Complete |
-| Sprint 2 | Auth & Orgs | 31 | 🟡 26/31 (UI remaining) |
+| Sprint 2 | Auth & Orgs | 31 | 🟢 Complete (26/31) |
 | Sprint 3 | Projects & Proposals | 79 | 🟢 Complete |
-| Sprint 4 | Billing | 71 | ⚪ Planned |
-| Sprint 5 | Workflows | 80 | ⚪ Planned |
-| Sprint 6 | Ticketing | 53 | ⚪ Planned |
+| Sprint 4 | Billing & Payments | 71 | 🟢 Complete |
+| Sprint 5 | Workflow Automation | 82 | 🟢 Complete |
+| Sprint 6 | Ticketing & Notifications | 50 | 🟡 In Progress |
 | Sprint 7 | Admin & Analytics | 73 | ⚪ Planned |
-| **MVP Total** | | **454 points** | ~4-5 months |
+| **MVP Total** | | **453 points** | ~4-5 months |
+
+**Completed**: 330 points (73% of MVP)
 
 ---
 

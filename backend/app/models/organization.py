@@ -63,8 +63,7 @@ class Organization(Base, PrimaryKeyMixin, TimestampMixin):
     invoices = relationship("Invoice", back_populates="organization", lazy="dynamic")
     n8n_environments = relationship("N8nEnvironment", back_populates="organization", lazy="dynamic")
     workflow_instances = relationship("WorkflowInstance", back_populates="organization", lazy="dynamic")
-    # TODO: Add relationships as models are created:
-    # tickets = relationship("Ticket", back_populates="organization", lazy="dynamic")
+    tickets = relationship("Ticket", back_populates="organization", lazy="dynamic")
 
     def __repr__(self) -> str:
         return f"<Organization(id={self.id}, name={self.name})>"

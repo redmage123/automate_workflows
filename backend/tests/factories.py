@@ -18,10 +18,12 @@ from app.models.organization import Organization
 from app.models.project import Project, ProjectStatus, ProjectPriority
 from app.models.proposal import Proposal, ProposalStatus
 from app.models.invoice import Invoice, InvoiceStatus
+from app.models.ticket import Ticket, TicketStatus, TicketPriority, TicketCategory
 from app.dao.user import UserDAO
 from app.dao.project import ProjectDAO
 from app.dao.proposal import ProposalDAO
 from app.dao.invoice import InvoiceDAO
+from app.dao.ticket import TicketDAO, TicketCommentDAO, TicketAttachmentDAO
 from app.core.auth import hash_password
 
 
@@ -930,4 +932,214 @@ class ExecutionLogFactory:
             status=status,
             output_data=output_data,
             error_message=error_message,
+        )
+
+
+class TicketFactory:
+    """
+    Factory for creating Ticket test instances.
+
+    WHY: Centralizes ticket creation logic for tests,
+    handling SLA calculations automatically.
+    """
+
+    @staticmethod
+    async def create(
+        session: AsyncSession,
+        subject: str = "Test Ticket",
+        description: str = "Test ticket description",
+        status: TicketStatus = TicketStatus.OPEN,
+        priority: TicketPriority = TicketPriority.MEDIUM,
+        category: TicketCategory = TicketCategory.SUPPORT,
+        org_id: Optional[int] = None,
+        organization: Optional[Organization] = None,
+        project_id: Optional[int] = None,
+        project: Optional[Project] = None,
+        created_by_user_id: Optional[int] = None,
+        created_by: Optional[User] = None,
+        assigned_to_user_id: Optional[int] = None,
+        assigned_to: Optional[User] = None,
+    ) -> Ticket:
+        """
+        Create a ticket for testing.
+
+        Args:
+            session: Database session
+            subject: Ticket subject
+            description: Ticket description
+            status: Ticket status
+            priority: Ticket priority
+            category: Ticket category
+            org_id: Organization ID
+            organization: Organization instance
+            project_id: Project ID
+            project: Project instance
+            created_by_user_id: Creator user ID
+            created_by: Creator user instance
+            assigned_to_user_id: Assignee user ID
+            assigned_to: Assignee user instance
+
+        Returns:
+            Created Ticket instance
+        """
+        # Handle organization
+        if organization is not None:
+            org_id = organization.id
+        elif org_id is None:
+            organization = await OrganizationFactory.create(session, name=f"Org for {subject}")
+            org_id = organization.id
+
+        # Handle project
+        if project is not None:
+            project_id = project.id
+
+        # Handle creator
+        if created_by is not None:
+            created_by_user_id = created_by.id
+        elif created_by_user_id is None:
+            created_by = await UserFactory.create(
+                session,
+                email=f"ticket-creator-{datetime.utcnow().timestamp()}@example.com",
+                org_id=org_id,
+            )
+            created_by_user_id = created_by.id
+
+        # Handle assignee
+        if assigned_to is not None:
+            assigned_to_user_id = assigned_to.id
+
+        ticket_dao = TicketDAO(session)
+        ticket = await ticket_dao.create(
+            org_id=org_id,
+            created_by_user_id=created_by_user_id,
+            subject=subject,
+            description=description,
+            priority=priority,
+            category=category,
+            project_id=project_id,
+            assigned_to_user_id=assigned_to_user_id,
+        )
+
+        # Update status if not OPEN (default)
+        # For test purposes, directly set status to bypass transition validation
+        if status != TicketStatus.OPEN:
+            ticket.status = status
+            if status == TicketStatus.RESOLVED:
+                from datetime import datetime
+                ticket.resolved_at = datetime.utcnow()
+            elif status == TicketStatus.CLOSED:
+                from datetime import datetime
+                ticket.closed_at = datetime.utcnow()
+            await session.commit()
+            await session.refresh(ticket)
+
+        return ticket
+
+    @staticmethod
+    async def create_urgent(
+        session: AsyncSession,
+        subject: str = "Urgent Ticket",
+        organization: Optional[Organization] = None,
+        created_by: Optional[User] = None,
+        **kwargs,
+    ) -> Ticket:
+        """Create an urgent priority ticket."""
+        return await TicketFactory.create(
+            session=session,
+            subject=subject,
+            priority=TicketPriority.URGENT,
+            organization=organization,
+            created_by=created_by,
+            **kwargs,
+        )
+
+    @staticmethod
+    async def create_in_progress(
+        session: AsyncSession,
+        subject: str = "In Progress Ticket",
+        organization: Optional[Organization] = None,
+        created_by: Optional[User] = None,
+        assigned_to: Optional[User] = None,
+        **kwargs,
+    ) -> Ticket:
+        """Create an in-progress ticket with assignee."""
+        return await TicketFactory.create(
+            session=session,
+            subject=subject,
+            status=TicketStatus.IN_PROGRESS,
+            organization=organization,
+            created_by=created_by,
+            assigned_to=assigned_to,
+            **kwargs,
+        )
+
+    @staticmethod
+    async def create_resolved(
+        session: AsyncSession,
+        subject: str = "Resolved Ticket",
+        organization: Optional[Organization] = None,
+        created_by: Optional[User] = None,
+        **kwargs,
+    ) -> Ticket:
+        """Create a resolved ticket."""
+        return await TicketFactory.create(
+            session=session,
+            subject=subject,
+            status=TicketStatus.RESOLVED,
+            organization=organization,
+            created_by=created_by,
+            **kwargs,
+        )
+
+
+class TicketCommentFactory:
+    """
+    Factory for creating TicketComment test instances.
+
+    WHY: Centralizes comment creation logic for tests.
+    """
+
+    @staticmethod
+    async def create(
+        session: AsyncSession,
+        ticket_id: int,
+        user_id: int,
+        content: str = "Test comment",
+        is_internal: bool = False,
+    ):
+        """
+        Create a ticket comment for testing.
+
+        Args:
+            session: Database session
+            ticket_id: Ticket ID
+            user_id: User ID
+            content: Comment content
+            is_internal: Whether this is an internal note
+
+        Returns:
+            Created TicketComment instance
+        """
+        comment_dao = TicketCommentDAO(session)
+        return await comment_dao.create(
+            ticket_id=ticket_id,
+            user_id=user_id,
+            content=content,
+            is_internal=is_internal,
+        )
+
+    @staticmethod
+    async def create_internal(
+        session: AsyncSession,
+        ticket_id: int,
+        user_id: int,
+        content: str = "Internal note",
+    ):
+        """Create an internal note comment."""
+        return await TicketCommentFactory.create(
+            session=session,
+            ticket_id=ticket_id,
+            user_id=user_id,
+            content=content,
+            is_internal=True,
         )

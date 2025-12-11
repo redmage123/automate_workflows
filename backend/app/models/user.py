@@ -71,5 +71,19 @@ class User(Base, PrimaryKeyMixin, TimestampMixin):
     # TODO: Uncomment when AuditLog model is created
     # audit_logs = relationship("AuditLog", back_populates="actor_user", foreign_keys="[AuditLog.actor_user_id]")
 
+    # Ticket relationships
+    created_tickets = relationship(
+        "Ticket",
+        back_populates="created_by",
+        foreign_keys="Ticket.created_by_user_id",
+    )
+    assigned_tickets = relationship(
+        "Ticket",
+        back_populates="assigned_to",
+        foreign_keys="Ticket.assigned_to_user_id",
+    )
+    ticket_comments = relationship("TicketComment", back_populates="user")
+    ticket_attachments = relationship("TicketAttachment", back_populates="uploaded_by")
+
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email={self.email}, role={self.role})>"

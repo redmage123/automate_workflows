@@ -19,7 +19,7 @@ from app.core.exception_handlers import (
     generic_exception_handler,
 )
 from app.middleware import SecurityHeadersMiddleware, RequestContextMiddleware, RateLimitMiddleware
-from app.api import auth, organizations, projects, proposals, invoices, workflows
+from app.api import auth, organizations, projects, proposals, invoices, workflows, tickets
 
 
 def create_app() -> FastAPI:
@@ -112,6 +112,7 @@ def create_app() -> FastAPI:
     app.include_router(invoices.payments_router, prefix="/api")
     app.include_router(invoices.webhooks_router, prefix="/api")
     app.include_router(workflows.router, prefix="/api")
+    app.include_router(tickets.router, prefix="/api")
 
     return app
 
