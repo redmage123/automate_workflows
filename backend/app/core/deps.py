@@ -27,6 +27,8 @@ from app.dao.user import UserDAO
 # WHY: HTTPBearer extracts the token from Authorization header automatically
 # Format: "Authorization: Bearer <token>"
 security = HTTPBearer()
+# Optional version for endpoints that work with or without auth
+security_optional = HTTPBearer(auto_error=False)
 
 
 async def get_current_user(
@@ -103,6 +105,50 @@ async def get_current_user(
             message="User account is inactive",
             user_id=user_id,
         )
+
+    return user
+
+
+async def get_current_user_optional(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_optional),
+    db: AsyncSession = Depends(get_db),
+) -> Optional[User]:
+    """
+    Get current authenticated user if token is provided, otherwise None.
+
+    WHY: Some endpoints need to work both with and without authentication:
+    - OAuth authorize endpoint (login vs link flows)
+    - Public pages that show different content for logged-in users
+
+    Args:
+        credentials: Optional JWT token from Authorization header
+        db: Database session
+
+    Returns:
+        User instance if authenticated, None otherwise
+    """
+    if not credentials:
+        return None
+
+    token = credentials.credentials
+
+    try:
+        payload = verify_token(token)
+    except (TokenExpiredError, TokenInvalidError):
+        return None
+
+    if await is_token_blacklisted(token):
+        return None
+
+    user_id: int = payload.get("user_id")
+    if not user_id:
+        return None
+
+    user_dao = UserDAO(User, db)
+    user = await user_dao.get_by_id(user_id)
+
+    if not user or not user.is_active:
+        return None
 
     return user
 

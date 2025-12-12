@@ -28,17 +28,35 @@ def upgrade() -> None:
     WHY: Enable project tracking and proposal management for automation services.
     """
     # Create enum types for projects
-    op.execute("CREATE TYPE projectstatus AS ENUM ('draft', 'proposal_sent', 'approved', 'in_progress', 'on_hold', 'completed', 'cancelled')")
-    op.execute("CREATE TYPE projectpriority AS ENUM ('low', 'medium', 'high', 'urgent')")
+    # WHY: Using DO block with IF NOT EXISTS to prevent duplicate type errors
+    # when model metadata is loaded (which might pre-register enum types)
+    op.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'projectstatus') THEN
+                CREATE TYPE projectstatus AS ENUM ('draft', 'proposal_sent', 'approved', 'in_progress', 'on_hold', 'completed', 'cancelled');
+            END IF;
+        END$$;
+    """)
+    op.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'projectpriority') THEN
+                CREATE TYPE projectpriority AS ENUM ('low', 'medium', 'high', 'urgent');
+            END IF;
+        END$$;
+    """)
 
     # Create projects table
+    # WHY: Using String columns then ALTER to enum type to avoid SQLAlchemy
+    # auto-creating enum types even when create_type=False is specified
     op.create_table(
         'projects',
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('name', sa.String(length=255), nullable=False),
         sa.Column('description', sa.Text(), nullable=True),
-        sa.Column('status', sa.Enum('draft', 'proposal_sent', 'approved', 'in_progress', 'on_hold', 'completed', 'cancelled', name='projectstatus', create_type=False), nullable=False, server_default='draft'),
-        sa.Column('priority', sa.Enum('low', 'medium', 'high', 'urgent', name='projectpriority', create_type=False), nullable=False, server_default='medium'),
+        sa.Column('status', sa.String(50), nullable=False, server_default='draft'),
+        sa.Column('priority', sa.String(50), nullable=False, server_default='medium'),
         sa.Column('org_id', sa.Integer(), nullable=False),
         sa.Column('estimated_hours', sa.Integer(), nullable=True),
         sa.Column('actual_hours', sa.Integer(), nullable=True, server_default='0'),
@@ -51,13 +69,28 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint('id')
     )
 
+    # Convert String columns to enum types
+    op.execute("ALTER TABLE projects ALTER COLUMN status DROP DEFAULT")
+    op.execute("ALTER TABLE projects ALTER COLUMN status TYPE projectstatus USING status::projectstatus")
+    op.execute("ALTER TABLE projects ALTER COLUMN status SET DEFAULT 'draft'::projectstatus")
+    op.execute("ALTER TABLE projects ALTER COLUMN priority DROP DEFAULT")
+    op.execute("ALTER TABLE projects ALTER COLUMN priority TYPE projectpriority USING priority::projectpriority")
+    op.execute("ALTER TABLE projects ALTER COLUMN priority SET DEFAULT 'medium'::projectpriority")
+
     # Create indexes for projects
     op.create_index('ix_projects_id', 'projects', ['id'])
     op.create_index('ix_projects_org_id', 'projects', ['org_id'])
     op.create_index('ix_projects_status', 'projects', ['status'])
 
     # Create enum type for proposals
-    op.execute("CREATE TYPE proposalstatus AS ENUM ('draft', 'sent', 'viewed', 'approved', 'rejected', 'expired', 'revised')")
+    op.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'proposalstatus') THEN
+                CREATE TYPE proposalstatus AS ENUM ('draft', 'sent', 'viewed', 'approved', 'rejected', 'expired', 'revised');
+            END IF;
+        END$$;
+    """)
 
     # Create proposals table
     op.create_table(
@@ -65,7 +98,7 @@ def upgrade() -> None:
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('title', sa.String(length=255), nullable=False),
         sa.Column('description', sa.Text(), nullable=True),
-        sa.Column('status', sa.Enum('draft', 'sent', 'viewed', 'approved', 'rejected', 'expired', 'revised', name='proposalstatus', create_type=False), nullable=False, server_default='draft'),
+        sa.Column('status', sa.String(50), nullable=False, server_default='draft'),
         sa.Column('project_id', sa.Integer(), nullable=False),
         sa.Column('org_id', sa.Integer(), nullable=False),
         sa.Column('version', sa.Integer(), nullable=False, server_default='1'),
@@ -93,6 +126,11 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(['previous_version_id'], ['proposals.id'], ondelete='SET NULL'),
         sa.PrimaryKeyConstraint('id')
     )
+
+    # Convert String columns to enum types for proposals
+    op.execute("ALTER TABLE proposals ALTER COLUMN status DROP DEFAULT")
+    op.execute("ALTER TABLE proposals ALTER COLUMN status TYPE proposalstatus USING status::proposalstatus")
+    op.execute("ALTER TABLE proposals ALTER COLUMN status SET DEFAULT 'draft'::proposalstatus")
 
     # Create indexes for proposals
     op.create_index('ix_proposals_id', 'proposals', ['id'])

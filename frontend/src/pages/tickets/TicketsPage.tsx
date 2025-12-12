@@ -358,7 +358,7 @@ export default function TicketsPage() {
         </div>
       </div>
 
-      {/* Tickets Table */}
+      {/* Tickets List - Mobile Card View / Desktop Table View */}
       <div className="card overflow-hidden p-0">
         {isLoading ? (
           <div className="p-8 text-center text-gray-500">Loading tickets...</div>
@@ -374,106 +374,166 @@ export default function TicketsPage() {
             </Link>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Subject
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Priority
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Assignee
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    SLA
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Created
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {tickets.map((ticket) => (
-                  <tr
-                    key={ticket.id}
-                    className={`hover:bg-gray-50 cursor-pointer ${
-                      ticket.is_sla_response_breached || ticket.is_sla_resolution_breached
-                        ? 'bg-red-50'
-                        : ''
-                    }`}
-                    onClick={() => navigate(`/tickets/${ticket.id}`)}
-                  >
-                    <td className="px-6 py-4">
-                      <div>
-                        <p className="font-medium text-gray-900 truncate max-w-md">
-                          {ticket.subject}
-                        </p>
-                        <p className="text-sm text-gray-500 flex items-center gap-2">
-                          <span className={`px-1.5 py-0.5 text-xs rounded ${TICKET_CATEGORY_CONFIG[ticket.category].bgColor} ${TICKET_CATEGORY_CONFIG[ticket.category].color}`}>
-                            {TICKET_CATEGORY_CONFIG[ticket.category].label}
-                          </span>
-                          {ticket.comment_count > 0 && (
-                            <span className="text-gray-400">
-                              {ticket.comment_count} comments
-                            </span>
-                          )}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <StatusBadge status={ticket.status} />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <PriorityBadge priority={ticket.priority} />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatUserName(ticket.assigned_to)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <SLAIndicator
-                        isBreached={ticket.is_sla_response_breached || ticket.is_sla_resolution_breached}
-                        dueAt={ticket.first_response_at ? ticket.sla_resolution_due_at : ticket.sla_response_due_at}
-                      />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDate(ticket.created_at)}
-                    </td>
-                    <td
-                      className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
+          <>
+            {/* Mobile Card View - visible on small screens */}
+            <div className="md:hidden divide-y divide-gray-200">
+              {tickets.map((ticket) => (
+                <div
+                  key={ticket.id}
+                  className={`p-4 cursor-pointer hover:bg-gray-50 ${
+                    ticket.is_sla_response_breached || ticket.is_sla_resolution_breached
+                      ? 'bg-red-50'
+                      : ''
+                  }`}
+                  onClick={() => navigate(`/tickets/${ticket.id}`)}
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <p className="font-medium text-gray-900 line-clamp-2 flex-1 pr-2">
+                      {ticket.subject}
+                    </p>
+                    <StatusBadge status={ticket.status} />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 mb-3">
+                    <PriorityBadge priority={ticket.priority} />
+                    <span className={`px-1.5 py-0.5 text-xs rounded ${TICKET_CATEGORY_CONFIG[ticket.category].bgColor} ${TICKET_CATEGORY_CONFIG[ticket.category].color}`}>
+                      {TICKET_CATEGORY_CONFIG[ticket.category].label}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm text-gray-500">
+                    <div className="flex items-center gap-3">
+                      <span>{formatDate(ticket.created_at)}</span>
+                      {ticket.comment_count > 0 && (
+                        <span>{ticket.comment_count} comments</span>
+                      )}
+                    </div>
+                    <SLAIndicator
+                      isBreached={ticket.is_sla_response_breached || ticket.is_sla_resolution_breached}
+                      dueAt={ticket.first_response_at ? ticket.sla_resolution_due_at : ticket.sla_response_due_at}
+                    />
+                  </div>
+                  <div className="mt-2 text-sm text-gray-500">
+                    Assigned: {formatUserName(ticket.assigned_to)}
+                  </div>
+                  {isAdmin && (
+                    <div
+                      className="mt-3 pt-3 border-t border-gray-100"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <div className="flex justify-end gap-2">
-                        <Link
-                          to={`/tickets/${ticket.id}`}
-                          className="text-blue-600 hover:text-blue-800"
-                        >
-                          View
-                        </Link>
-                        {isAdmin && (
-                          <button
-                            onClick={() => handleDelete(ticket.id, ticket.subject)}
-                            className="text-red-600 hover:text-red-800"
-                            disabled={deleteMutation.isPending}
-                          >
-                            Delete
-                          </button>
-                        )}
-                      </div>
-                    </td>
+                      <button
+                        onClick={() => handleDelete(ticket.id, ticket.subject)}
+                        className="text-sm text-red-600 hover:text-red-800"
+                        disabled={deleteMutation.isPending}
+                      >
+                        Delete ticket
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table View - hidden on small screens */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Subject
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Priority
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Assignee
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      SLA
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Created
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {tickets.map((ticket) => (
+                    <tr
+                      key={ticket.id}
+                      className={`hover:bg-gray-50 cursor-pointer ${
+                        ticket.is_sla_response_breached || ticket.is_sla_resolution_breached
+                          ? 'bg-red-50'
+                          : ''
+                      }`}
+                      onClick={() => navigate(`/tickets/${ticket.id}`)}
+                    >
+                      <td className="px-6 py-4">
+                        <div>
+                          <p className="font-medium text-gray-900 truncate max-w-md">
+                            {ticket.subject}
+                          </p>
+                          <p className="text-sm text-gray-500 flex items-center gap-2">
+                            <span className={`px-1.5 py-0.5 text-xs rounded ${TICKET_CATEGORY_CONFIG[ticket.category].bgColor} ${TICKET_CATEGORY_CONFIG[ticket.category].color}`}>
+                              {TICKET_CATEGORY_CONFIG[ticket.category].label}
+                            </span>
+                            {ticket.comment_count > 0 && (
+                              <span className="text-gray-400">
+                                {ticket.comment_count} comments
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <StatusBadge status={ticket.status} />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <PriorityBadge priority={ticket.priority} />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {formatUserName(ticket.assigned_to)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <SLAIndicator
+                          isBreached={ticket.is_sla_response_breached || ticket.is_sla_resolution_breached}
+                          dueAt={ticket.first_response_at ? ticket.sla_resolution_due_at : ticket.sla_response_due_at}
+                        />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {formatDate(ticket.created_at)}
+                      </td>
+                      <td
+                        className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex justify-end gap-2">
+                          <Link
+                            to={`/tickets/${ticket.id}`}
+                            className="text-blue-600 hover:text-blue-800"
+                          >
+                            View
+                          </Link>
+                          {isAdmin && (
+                            <button
+                              onClick={() => handleDelete(ticket.id, ticket.subject)}
+                              className="text-red-600 hover:text-red-800"
+                              disabled={deleteMutation.isPending}
+                            >
+                              Delete
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
 
         {/* Pagination */}

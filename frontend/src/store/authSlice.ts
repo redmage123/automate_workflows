@@ -21,9 +21,50 @@ import type {
   Organization,
   LoginRequest,
   RegisterRequest,
+  ApiError,
 } from '../types';
 import * as authService from '../services/auth';
 import { clearTokens, getAccessToken } from '../services/api';
+
+/**
+ * Type guard for API error objects
+ *
+ * WHAT: Checks if an unknown error is an ApiError from the backend.
+ *
+ * WHY: The backend returns structured error responses with helpful
+ * messages. We need to extract these for user-friendly error display.
+ *
+ * HOW: Check for the presence of 'message' and 'error' properties
+ * which are always present in ApiError responses.
+ */
+function isApiError(error: unknown): error is ApiError {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    'error' in error
+  );
+}
+
+/**
+ * Extract user-friendly error message from various error types
+ *
+ * WHAT: Converts different error formats into readable messages.
+ *
+ * WHY: Errors can come from the API (ApiError), network issues (Error),
+ * or other sources. Users need clear, actionable messages.
+ *
+ * HOW: Check error type and extract the most helpful message available.
+ */
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (isApiError(error)) {
+    return error.message;
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return fallback;
+}
 
 /**
  * Extended auth state with actions
@@ -100,7 +141,7 @@ export const useAuthStore = create<AuthStore>()(
             isLoading: false,
           });
         } catch (error) {
-          const message = error instanceof Error ? error.message : 'Login failed';
+          const message = getErrorMessage(error, 'Login failed. Please check your credentials.');
           set({
             isLoading: false,
             error: message,
@@ -128,7 +169,7 @@ export const useAuthStore = create<AuthStore>()(
           await authService.register(data);
           set({ isLoading: false });
         } catch (error) {
-          const message = error instanceof Error ? error.message : 'Registration failed';
+          const message = getErrorMessage(error, 'Registration failed. Please try again.');
           set({ isLoading: false, error: message });
           throw error;
         }

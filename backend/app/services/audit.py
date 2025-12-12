@@ -673,6 +673,115 @@ class AuditService:
             extra_data=extra_data,
         )
 
+    # =========================================================================
+    # OAuth Events
+    # =========================================================================
+
+    async def log_oauth_login(
+        self,
+        user_id: int,
+        org_id: Optional[int] = None,
+        provider: str = "unknown",
+    ) -> Optional[AuditLog]:
+        """
+        Log an OAuth login.
+
+        WHAT: Records when a user logs in via OAuth provider.
+
+        WHY: OAuth logins are important for:
+        - Tracking authentication methods used
+        - Detecting unusual login patterns
+        - Security auditing
+
+        Args:
+            user_id: ID of the authenticated user
+            org_id: User's organization ID
+            provider: OAuth provider name (e.g., 'google')
+
+        Returns:
+            Created AuditLog or None if logging failed
+        """
+        return await self.log_event(
+            action=AuditAction.LOGIN_SUCCESS,
+            resource_type="auth",
+            actor_user_id=user_id,
+            org_id=org_id,
+            extra_data={
+                "login_method": f"oauth_{provider}",
+                "provider": provider,
+            },
+        )
+
+    async def log_oauth_account_linked(
+        self,
+        user_id: int,
+        org_id: Optional[int] = None,
+        provider: str = "unknown",
+    ) -> Optional[AuditLog]:
+        """
+        Log when an OAuth account is linked.
+
+        WHAT: Records when a user links an OAuth provider to their account.
+
+        WHY: Account linking is security-relevant:
+        - Adds new authentication method
+        - May indicate account takeover if unexpected
+        - Important for compliance auditing
+
+        Args:
+            user_id: ID of the user
+            org_id: User's organization ID
+            provider: OAuth provider name (e.g., 'google')
+
+        Returns:
+            Created AuditLog or None if logging failed
+        """
+        return await self.log_event(
+            action=AuditAction.ACCOUNT_CREATED,  # Re-using for OAuth account creation
+            resource_type="oauth_account",
+            actor_user_id=user_id,
+            org_id=org_id,
+            extra_data={
+                "provider": provider,
+                "action": "linked",
+            },
+        )
+
+    async def log_oauth_account_unlinked(
+        self,
+        user_id: int,
+        org_id: Optional[int] = None,
+        provider: str = "unknown",
+    ) -> Optional[AuditLog]:
+        """
+        Log when an OAuth account is unlinked.
+
+        WHAT: Records when a user unlinks an OAuth provider from their account.
+
+        WHY: Account unlinking is security-relevant:
+        - Removes authentication method
+        - May indicate security response (removing compromised provider)
+        - Important for compliance auditing
+
+        Args:
+            user_id: ID of the user
+            org_id: User's organization ID
+            provider: OAuth provider name (e.g., 'google')
+
+        Returns:
+            Created AuditLog or None if logging failed
+        """
+        return await self.log_event(
+            action=AuditAction.DELETE,
+            resource_type="oauth_account",
+            actor_user_id=user_id,
+            org_id=org_id,
+            extra_data={
+                "provider": provider,
+                "action": "unlinked",
+            },
+        )
+
 
 # Dependency for FastAPI routes
 async def get_audit_service(session: AsyncSession) -> AuditService:

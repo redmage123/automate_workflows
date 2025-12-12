@@ -158,18 +158,35 @@ class Ticket(Base):
     description: Mapped[str] = mapped_column(Text, nullable=False)
 
     # Classification
+    # WHY: create_type=False because enum types are created in migrations
+    # WHY: values_callable ensures the enum value (lowercase) is used, not the name (UPPERCASE)
     status: Mapped[TicketStatus] = mapped_column(
-        SQLEnum(TicketStatus, name="ticketstatus"),
+        SQLEnum(
+            TicketStatus,
+            name="ticketstatus",
+            create_type=False,
+            values_callable=lambda enum: [e.value for e in enum],
+        ),
         default=TicketStatus.OPEN,
         nullable=False,
     )
     priority: Mapped[TicketPriority] = mapped_column(
-        SQLEnum(TicketPriority, name="ticketpriority"),
+        SQLEnum(
+            TicketPriority,
+            name="ticketpriority",
+            create_type=False,
+            values_callable=lambda enum: [e.value for e in enum],
+        ),
         default=TicketPriority.MEDIUM,
         nullable=False,
     )
     category: Mapped[TicketCategory] = mapped_column(
-        SQLEnum(TicketCategory, name="ticketcategory"),
+        SQLEnum(
+            TicketCategory,
+            name="ticketcategory",
+            create_type=False,
+            values_callable=lambda enum: [e.value for e in enum],
+        ),
         default=TicketCategory.SUPPORT,
         nullable=False,
     )

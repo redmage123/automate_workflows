@@ -55,11 +55,16 @@ def upgrade() -> None:
     )
 
     # Create enum type for invoice status
-    op.execute(
-        "CREATE TYPE invoicestatus AS ENUM ("
-        "'draft', 'sent', 'paid', 'partially_paid', 'overdue', 'cancelled', 'refunded'"
-        ")"
-    )
+    op.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'invoicestatus') THEN
+                CREATE TYPE invoicestatus AS ENUM (
+                    'draft', 'sent', 'paid', 'partially_paid', 'overdue', 'cancelled', 'refunded'
+                );
+            END IF;
+        END$$;
+    """)
 
     # Create invoices table
     op.create_table(
@@ -73,11 +78,7 @@ def upgrade() -> None:
         ),
         sa.Column(
             'status',
-            sa.Enum(
-                'draft', 'sent', 'paid', 'partially_paid', 'overdue', 'cancelled', 'refunded',
-                name='invoicestatus',
-                create_type=False
-            ),
+            sa.String(50),
             nullable=False,
             server_default='draft',
             comment='Current invoice status'
@@ -210,6 +211,11 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint('id')
     )
+
+    # Convert String column to enum type for invoices
+    op.execute("ALTER TABLE invoices ALTER COLUMN status DROP DEFAULT")
+    op.execute("ALTER TABLE invoices ALTER COLUMN status TYPE invoicestatus USING status::invoicestatus")
+    op.execute("ALTER TABLE invoices ALTER COLUMN status SET DEFAULT 'draft'::invoicestatus")
 
     # Create indexes for invoices
     op.create_index('ix_invoices_id', 'invoices', ['id'])

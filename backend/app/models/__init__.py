@@ -18,6 +18,7 @@ from app.models.workflow import (
     WorkflowTemplate,
     WorkflowInstance,
     WorkflowStatus,
+    WorkflowVersion,
     ExecutionLog,
     ExecutionStatus,
 )
@@ -36,6 +37,81 @@ from app.models.notification_preference import (
     NotificationChannel,
     NotificationFrequency,
     DEFAULT_PREFERENCES,
+)
+from app.models.oauth_account import OAuthAccount, OAuthProvider
+from app.models.subscription import (
+    Subscription,
+    SubscriptionPlan,
+    SubscriptionStatus,
+    PLAN_LIMITS,
+)
+from app.models.document import (
+    Document,
+    DocumentAccess,
+    DocumentAccessLevel,
+)
+from app.models.time_entry import (
+    TimeEntry,
+    TimeEntryStatus,
+    TimeSummary,
+)
+from app.models.message import (
+    Conversation,
+    ConversationType,
+    ConversationParticipant,
+    Message,
+    MessageReadReceipt,
+)
+from app.models.activity import (
+    ActivityEvent,
+    ActivityType,
+    ActivitySubscription,
+)
+from app.models.announcement import (
+    Announcement,
+    AnnouncementType,
+    AnnouncementPriority,
+    AnnouncementStatus,
+    AnnouncementRead,
+)
+from app.models.report import (
+    ScheduledReport,
+    ReportExecution,
+    ReportTemplate,
+    ReportType,
+    ReportFormat,
+    ExecutionStatus as ReportExecutionStatus,
+    DeliveryStatus,
+)
+from app.models.onboarding import (
+    OnboardingTemplate,
+    ClientOnboarding,
+    OnboardingReminder,
+    OnboardingStatus,
+    StepType,
+)
+from app.models.survey import (
+    Survey,
+    SurveyResponse as SurveyResponseModel,
+    SurveyInvitation,
+    FeedbackScore,
+    SurveyType,
+    SurveyStatus,
+    QuestionType,
+)
+from app.models.email_template import (
+    EmailTemplate,
+    EmailTemplateVersion,
+    SentEmail,
+    EmailCategory,
+)
+from app.models.push_subscription import PushSubscription
+from app.models.integration import (
+    CalendarIntegration,
+    CalendarProvider,
+    WebhookEndpoint,
+    WebhookDelivery,
+    WebhookEventType,
 )
 
 __all__ = [
@@ -60,6 +136,7 @@ __all__ = [
     "WorkflowTemplate",
     "WorkflowInstance",
     "WorkflowStatus",
+    "WorkflowVersion",
     "ExecutionLog",
     "ExecutionStatus",
     "Ticket",
@@ -74,4 +151,58 @@ __all__ = [
     "NotificationChannel",
     "NotificationFrequency",
     "DEFAULT_PREFERENCES",
+    "OAuthAccount",
+    "OAuthProvider",
+    "Subscription",
+    "SubscriptionPlan",
+    "SubscriptionStatus",
+    "PLAN_LIMITS",
+    "Document",
+    "DocumentAccess",
+    "DocumentAccessLevel",
+    "TimeEntry",
+    "TimeEntryStatus",
+    "TimeSummary",
+    "Conversation",
+    "ConversationType",
+    "ConversationParticipant",
+    "Message",
+    "MessageReadReceipt",
+    "ActivityEvent",
+    "ActivityType",
+    "ActivitySubscription",
+    "Announcement",
+    "AnnouncementType",
+    "AnnouncementPriority",
+    "AnnouncementStatus",
+    "AnnouncementRead",
+    "ScheduledReport",
+    "ReportExecution",
+    "ReportTemplate",
+    "ReportType",
+    "ReportFormat",
+    "ReportExecutionStatus",
+    "DeliveryStatus",
+    "OnboardingTemplate",
+    "ClientOnboarding",
+    "OnboardingReminder",
+    "OnboardingStatus",
+    "StepType",
+    "Survey",
+    "SurveyResponseModel",
+    "SurveyInvitation",
+    "FeedbackScore",
+    "SurveyType",
+    "SurveyStatus",
+    "QuestionType",
+    "EmailTemplate",
+    "EmailTemplateVersion",
+    "SentEmail",
+    "EmailCategory",
+    "PushSubscription",
+    "CalendarIntegration",
+    "CalendarProvider",
+    "WebhookEndpoint",
+    "WebhookDelivery",
+    "WebhookEventType",
 ]

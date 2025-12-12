@@ -129,6 +129,37 @@ export async function checkEnvironmentHealth(id: number): Promise<N8nHealthCheck
   return apiGet<N8nHealthCheckResponse>(`/api/workflows/environments/${id}/health`);
 }
 
+/**
+ * N8n editor URL response
+ */
+export interface N8nEditorUrlResponse {
+  editor_url: string;
+  base_url: string;
+  environment_name: string;
+  workflow_id: string | null;
+  instructions: string;
+}
+
+/**
+ * Get n8n visual editor URL
+ *
+ * WHY: n8n has a powerful built-in graphical workflow designer.
+ * This returns the URL to access it directly.
+ *
+ * @param environmentId - Environment ID
+ * @param workflowId - Optional workflow ID to edit
+ * @returns Editor URL and instructions
+ */
+export async function getN8nEditorUrl(
+  environmentId: number,
+  workflowId?: string
+): Promise<N8nEditorUrlResponse> {
+  const queryString = workflowId ? `?workflow_id=${workflowId}` : '';
+  return apiGet<N8nEditorUrlResponse>(
+    `/api/workflows/environments/${environmentId}/editor-url${queryString}`
+  );
+}
+
 // ============================================================================
 // Workflow Template API
 // ============================================================================
@@ -403,4 +434,98 @@ export async function testEnvironmentConnection(id?: number): Promise<N8nHealthC
     throw new Error('No active n8n environment configured');
   }
   return checkEnvironmentHealth(envs.items[0].id);
+}
+
+// ============================================================================
+// Workflow AI API (Natural Language Generation)
+// ============================================================================
+
+/**
+ * AI-generated workflow response
+ *
+ * WHY: Defines the structure returned by AI generation endpoints.
+ */
+export interface WorkflowGenerationResponse {
+  name: string;
+  nodes: Record<string, unknown>[];
+  connections: Record<string, unknown>;
+  settings: Record<string, unknown>;
+  explanation: string;
+  confidence: number;
+  suggestions: string[];
+}
+
+/**
+ * AI service status response
+ */
+export interface AIServiceStatusResponse {
+  available: boolean;
+  model: string | null;
+  message: string;
+}
+
+/**
+ * Workflow validation response
+ */
+export interface WorkflowValidationResponse {
+  valid: boolean;
+  errors: string[];
+  warnings: string[];
+}
+
+/**
+ * Check AI service availability
+ *
+ * WHY: Frontend should know if AI features are available to show/hide UI.
+ */
+export async function getAIServiceStatus(): Promise<AIServiceStatusResponse> {
+  return apiGet<AIServiceStatusResponse>('/api/workflow-ai/status');
+}
+
+/**
+ * Generate workflow from natural language description
+ *
+ * @param description - Plain text description of desired workflow
+ * @param context - Optional context (available_credentials, project_name, etc.)
+ * @returns Generated workflow with metadata
+ */
+export async function generateWorkflowFromDescription(
+  description: string,
+  context?: Record<string, unknown>
+): Promise<WorkflowGenerationResponse> {
+  return apiPost<WorkflowGenerationResponse>('/api/workflow-ai/generate', {
+    description,
+    context,
+  });
+}
+
+/**
+ * Refine existing workflow based on feedback
+ *
+ * @param workflow - Current workflow JSON
+ * @param feedback - User's refinement request
+ * @returns Updated workflow with metadata
+ */
+export async function refineWorkflow(
+  workflow: Record<string, unknown>,
+  feedback: string
+): Promise<WorkflowGenerationResponse> {
+  return apiPost<WorkflowGenerationResponse>('/api/workflow-ai/refine', {
+    workflow,
+    feedback,
+  });
+}
+
+/**
+ * Validate workflow structure
+ *
+ * @param workflow - Workflow JSON to validate
+ * @returns Validation result with errors and warnings
+ */
+export async function validateWorkflow(
+  workflow: Record<string, unknown>
+): Promise<WorkflowValidationResponse> {
+  return apiPost<WorkflowValidationResponse>('/api/workflow-ai/validate', {
+    workflow,
+  });
 }

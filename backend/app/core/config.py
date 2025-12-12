@@ -33,12 +33,26 @@ class Settings(BaseSettings):
     STRIPE_PUBLISHABLE_KEY: str
     STRIPE_WEBHOOK_SECRET: str
 
-    # S3
-    S3_ENDPOINT: str
-    S3_ACCESS_KEY: str
-    S3_SECRET_KEY: str
-    S3_BUCKET: str
+    # Stripe Subscription Plans
+    # WHY: Price IDs map our plans to Stripe products for billing
+    STRIPE_PRICE_PRO_MONTHLY: Optional[str] = None  # price_xxx
+    STRIPE_PRICE_PRO_YEARLY: Optional[str] = None  # price_xxx
+    STRIPE_PRICE_ENTERPRISE_MONTHLY: Optional[str] = None  # price_xxx
+    STRIPE_PRICE_ENTERPRISE_YEARLY: Optional[str] = None  # price_xxx
+    STRIPE_TRIAL_DAYS: int = 14  # Trial period for new subscriptions
+
+    # S3 / AWS
+    S3_ENDPOINT: Optional[str] = None
+    S3_ACCESS_KEY: Optional[str] = None
+    S3_SECRET_KEY: Optional[str] = None
+    S3_BUCKET: str = "automation-platform-documents"
     S3_REGION: str = "us-east-1"
+
+    # AWS (alternative config for boto3)
+    AWS_ACCESS_KEY_ID: Optional[str] = None
+    AWS_SECRET_ACCESS_KEY: Optional[str] = None
+    AWS_REGION: str = "us-east-1"
+    S3_BUCKET_NAME: str = "automation-platform-documents"  # Alias for S3_BUCKET
 
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
@@ -55,11 +69,48 @@ class Settings(BaseSettings):
     SLACK_WEBHOOK_URL: Optional[str] = None
     SLACK_WEBHOOK_ENABLED: bool = False
 
+    # OpenAI API (for natural language workflow generation)
+    # WHY: GPT is used to convert plain text workflow descriptions to n8n JSON
+    OPENAI_API_KEY: Optional[str] = None
+    OPENAI_MODEL: str = "gpt-5.2"  # Default model for workflow generation (GPT-5.2 is latest)
+
     # Observability
     SENTRY_DSN: Optional[str] = None
 
     # CORS
-    CORS_ORIGINS: list[str] = ["http://localhost:3000"]
+    # WHY: Allow frontend from multiple ports during development
+    CORS_ORIGINS: list[str] = [
+        "http://localhost:3000",
+        "http://localhost:5100",
+        "http://localhost:5101",
+        "http://localhost:5173",
+        "http://127.0.0.1:5100",
+        "http://127.0.0.1:5101",
+        "http://127.0.0.1:5173",
+        "http://176.9.99.103:5100",
+        "http://176.9.99.103:5101",
+        "http://176.9.99.103:5173",
+    ]
+
+    # Google OAuth
+    # WHY: OAuth enables social login for better UX and security
+    GOOGLE_OAUTH_CLIENT_ID: Optional[str] = None
+    GOOGLE_OAUTH_CLIENT_SECRET: Optional[str] = None
+    GOOGLE_OAUTH_REDIRECT_URI: Optional[str] = None  # e.g., http://localhost:8000/api/auth/oauth/google/callback
+
+    @property
+    def google_oauth_enabled(self) -> bool:
+        """
+        Check if Google OAuth is properly configured.
+
+        WHY: OAuth requires all three settings. If any are missing,
+        the Google login button should be hidden in the UI.
+        """
+        return all([
+            self.GOOGLE_OAUTH_CLIENT_ID,
+            self.GOOGLE_OAUTH_CLIENT_SECRET,
+            self.GOOGLE_OAUTH_REDIRECT_URI,
+        ])
 
     @property
     def async_database_url(self) -> str:

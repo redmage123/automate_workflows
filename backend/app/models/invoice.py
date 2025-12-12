@@ -130,8 +130,15 @@ class Invoice(Base):
     )
 
     # Status tracking
+    # WHY: create_type=False because enum types are created in migrations
+    # WHY: values_callable ensures the enum value (lowercase) is used, not the name (UPPERCASE)
     status: Mapped[InvoiceStatus] = Column(
-        SQLEnum(InvoiceStatus),
+        SQLEnum(
+            InvoiceStatus,
+            name="invoicestatus",
+            create_type=False,
+            values_callable=lambda enum: [e.value for e in enum],
+        ),
         nullable=False,
         default=InvoiceStatus.DRAFT,
         index=True,

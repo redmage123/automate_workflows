@@ -47,6 +47,7 @@ import {
   WorkflowsPage,
   WorkflowDetailPage,
   WorkflowFormPage,
+  WorkflowAIPage,
   TemplatesPage,
   EnvironmentsPage,
 } from './pages/workflows';
@@ -195,6 +196,7 @@ function App() {
                 {/* Workflow routes */}
                 <Route path="/workflows" element={<WorkflowsPage />} />
                 <Route path="/workflows/new" element={<WorkflowFormPage />} />
+                <Route path="/workflows/ai" element={<WorkflowAIPage />} />
                 <Route path="/workflows/templates" element={<TemplatesPage />} />
                 <Route path="/workflows/environment" element={<EnvironmentsPage />} />
                 <Route path="/workflows/:id" element={<WorkflowDetailPage />} />

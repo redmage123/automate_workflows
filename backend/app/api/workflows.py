@@ -387,6 +387,83 @@ async def check_environment_health(
     )
 
 
+@router.get(
+    "/environments/{environment_id}/editor-url",
+    status_code=status.HTTP_200_OK,
+    summary="Get n8n editor URL",
+    description="Get the URL to access the n8n visual workflow editor",
+)
+async def get_environment_editor_url(
+    environment_id: int,
+    workflow_id: Optional[str] = Query(
+        default=None,
+        description="Optional n8n workflow ID to open directly",
+    ),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    Get n8n editor URL for visual workflow design.
+
+    WHAT: Returns the URL to access n8n's visual workflow editor.
+
+    WHY: n8n has a powerful graphical workflow designer built-in.
+    Instead of building our own, we leverage n8n's editor directly.
+    Users can design workflows visually and then import them.
+
+    HOW: Constructs the appropriate n8n URL based on:
+    - Environment base URL
+    - Optional workflow ID for editing existing workflows
+    - New workflow creation path
+
+    Args:
+        environment_id: n8n environment to use
+        workflow_id: Optional workflow ID to edit (opens editor for that workflow)
+        current_user: Authenticated user
+        db: Database session
+
+    Returns:
+        Dictionary with editor URL and instructions
+    """
+    env_dao = N8nEnvironmentDAO(db)
+    env = await env_dao.get_by_id_and_org(environment_id, current_user.org_id)
+
+    if not env:
+        raise ResourceNotFoundError(
+            message="N8n environment not found",
+            resource_type="n8n_environment",
+            resource_id=environment_id,
+        )
+
+    if not env.is_active:
+        raise ValidationError(
+            message="N8n environment is not active",
+            environment_id=environment_id,
+        )
+
+    # Construct the n8n editor URL
+    base_url = env.base_url.rstrip("/")
+
+    if workflow_id:
+        # URL to edit existing workflow
+        editor_url = f"{base_url}/workflow/{workflow_id}"
+    else:
+        # URL to create new workflow
+        editor_url = f"{base_url}/workflow/new"
+
+    return {
+        "editor_url": editor_url,
+        "base_url": base_url,
+        "environment_name": env.name,
+        "workflow_id": workflow_id,
+        "instructions": (
+            "Click the link to open n8n's visual workflow editor. "
+            "After designing your workflow, save it in n8n and note the workflow ID "
+            "to link it back to your project."
+        ),
+    }
+
+
 # ============================================================================
 # Workflow Template Endpoints
 # ============================================================================
@@ -1053,3 +1130,309 @@ async def get_execution_stats(
         success_rate=success_rate,
         average_duration=avg_duration,
     )
+
+
+# ============================================================================
+# Workflow Version Endpoints
+# ============================================================================
+
+
+@router.get(
+    "/instances/{instance_id}/versions",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="List workflow versions",
+    description="Get version history for a workflow instance",
+)
+async def list_versions(
+    instance_id: int,
+    skip: int = Query(0, ge=0, description="Number of items to skip"),
+    limit: int = Query(50, ge=1, le=100, description="Maximum items to return"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    List workflow versions.
+
+    WHAT: Retrieves version history for a workflow instance.
+
+    WHY: Users need to see version history to:
+    - Understand workflow evolution
+    - Select versions for restoration
+    - Compare changes between versions
+    """
+    from app.services.workflow_version_service import WorkflowVersionService
+    from app.schemas.workflow_version import (
+        WorkflowVersionListResponse,
+        WorkflowVersionResponse,
+    )
+
+    service = WorkflowVersionService(db)
+    result = await service.get_versions(
+        workflow_instance_id=instance_id,
+        org_id=current_user.org_id,
+        skip=skip,
+        limit=limit,
+    )
+
+    # Convert to response format
+    items = []
+    for item in result["items"]:
+        version = item["version"]
+        items.append(WorkflowVersionResponse(
+            id=version.id,
+            workflow_instance_id=version.workflow_instance_id,
+            version_number=version.version_number,
+            workflow_json=version.workflow_json,
+            change_description=version.change_description,
+            created_by=version.created_by,
+            created_by_email=item.get("created_by_email"),
+            is_current=version.is_current,
+            created_at=version.created_at,
+        ))
+
+    return WorkflowVersionListResponse(
+        items=items,
+        total=result["total"],
+        workflow_instance_id=instance_id,
+        current_version=result["current_version"],
+    ).model_dump()
+
+
+@router.get(
+    "/instances/{instance_id}/versions/{version_number}",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="Get workflow version",
+    description="Get a specific workflow version by number",
+)
+async def get_version(
+    instance_id: int,
+    version_number: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    Get a specific workflow version.
+
+    WHAT: Retrieves a single version by its number.
+
+    WHY: Allows viewing historical workflow definitions.
+    """
+    from app.services.workflow_version_service import WorkflowVersionService
+    from app.schemas.workflow_version import WorkflowVersionResponse
+    from app.dao.user import UserDAO
+
+    service = WorkflowVersionService(db)
+    version = await service.get_version(
+        workflow_instance_id=instance_id,
+        version_number=version_number,
+        org_id=current_user.org_id,
+    )
+
+    # Get creator email
+    user_dao = UserDAO(db)
+    creator = await user_dao.get_by_id(version.created_by)
+
+    return WorkflowVersionResponse(
+        id=version.id,
+        workflow_instance_id=version.workflow_instance_id,
+        version_number=version.version_number,
+        workflow_json=version.workflow_json,
+        change_description=version.change_description,
+        created_by=version.created_by,
+        created_by_email=creator.email if creator else None,
+        is_current=version.is_current,
+        created_at=version.created_at,
+    ).model_dump()
+
+
+@router.post(
+    "/instances/{instance_id}/versions",
+    response_model=dict,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create workflow version",
+    description="Create a new version of a workflow",
+)
+async def create_version(
+    instance_id: int,
+    data: dict,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    Create a new workflow version.
+
+    WHAT: Creates a versioned snapshot of the workflow JSON.
+
+    WHY: Every significant change to a workflow should be versioned
+    to enable rollback and provide an audit trail.
+    """
+    from app.services.workflow_version_service import WorkflowVersionService
+    from app.schemas.workflow_version import (
+        WorkflowVersionCreateRequest,
+        WorkflowVersionResponse,
+    )
+    from app.dao.user import UserDAO
+
+    # Validate request
+    request = WorkflowVersionCreateRequest(**data)
+
+    service = WorkflowVersionService(db)
+    version = await service.create_version(
+        workflow_instance_id=instance_id,
+        org_id=current_user.org_id,
+        user_id=current_user.id,
+        workflow_json=request.workflow_json,
+        change_description=request.change_description,
+        set_as_current=request.set_as_current,
+    )
+
+    # Audit log
+    audit_service = AuditService(db)
+    await audit_service.log_create(
+        resource_type="workflow_version",
+        resource_id=version.id,
+        actor_user_id=current_user.id,
+        org_id=current_user.org_id,
+        extra_data={
+            "workflow_instance_id": instance_id,
+            "version_number": version.version_number,
+            "change_description": request.change_description,
+        },
+    )
+
+    # Get creator email
+    user_dao = UserDAO(db)
+    creator = await user_dao.get_by_id(version.created_by)
+
+    return WorkflowVersionResponse(
+        id=version.id,
+        workflow_instance_id=version.workflow_instance_id,
+        version_number=version.version_number,
+        workflow_json=version.workflow_json,
+        change_description=version.change_description,
+        created_by=version.created_by,
+        created_by_email=creator.email if creator else None,
+        is_current=version.is_current,
+        created_at=version.created_at,
+    ).model_dump()
+
+
+@router.post(
+    "/instances/{instance_id}/versions/{version_number}/restore",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="Restore workflow version",
+    description="Restore a previous workflow version",
+)
+async def restore_version(
+    instance_id: int,
+    version_number: int,
+    data: dict = {},
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    Restore a previous workflow version.
+
+    WHAT: Creates a new version based on a historical version's JSON.
+
+    WHY: Enables rollback when a workflow change causes problems.
+
+    HOW: Copies the historical version's JSON to a new version,
+    setting it as current. Does NOT modify the original version.
+    """
+    from app.services.workflow_version_service import WorkflowVersionService
+    from app.schemas.workflow_version import (
+        WorkflowVersionRestoreRequest,
+        WorkflowVersionRestoreResponse,
+        WorkflowVersionResponse,
+    )
+
+    # Validate request
+    request = WorkflowVersionRestoreRequest(**data)
+
+    service = WorkflowVersionService(db)
+    result = await service.restore_version(
+        workflow_instance_id=instance_id,
+        version_number=version_number,
+        org_id=current_user.org_id,
+        user_id=current_user.id,
+        restore_description=request.restore_description,
+    )
+
+    # Audit log
+    audit_service = AuditService(db)
+    await audit_service.log_update(
+        resource_type="workflow_version",
+        resource_id=result["restored_version"].id,
+        actor_user_id=current_user.id,
+        org_id=current_user.org_id,
+        extra_data={
+            "action": "restore",
+            "workflow_instance_id": instance_id,
+            "restored_from_version": version_number,
+            "new_version_number": result["new_version_number"],
+        },
+    )
+
+    version = result["restored_version"]
+    return WorkflowVersionRestoreResponse(
+        message=result["message"],
+        restored_version=WorkflowVersionResponse(
+            id=version.id,
+            workflow_instance_id=version.workflow_instance_id,
+            version_number=version.version_number,
+            workflow_json=version.workflow_json,
+            change_description=version.change_description,
+            created_by=version.created_by,
+            created_by_email=result.get("created_by_email"),
+            is_current=version.is_current,
+            created_at=version.created_at,
+        ),
+        new_version_number=result["new_version_number"],
+    ).model_dump()
+
+
+@router.post(
+    "/instances/{instance_id}/versions/compare",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="Compare workflow versions",
+    description="Compare two workflow versions side by side",
+)
+async def compare_versions(
+    instance_id: int,
+    data: dict,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    Compare two workflow versions.
+
+    WHAT: Retrieves two versions for side-by-side comparison.
+
+    WHY: Enables understanding what changed between versions.
+    """
+    from app.services.workflow_version_service import WorkflowVersionService
+    from app.schemas.workflow_version import (
+        WorkflowVersionCompareRequest,
+        WorkflowVersionCompareResponse,
+    )
+
+    # Validate request
+    request = WorkflowVersionCompareRequest(**data)
+
+    service = WorkflowVersionService(db)
+    comparison = await service.compare_versions(
+        workflow_instance_id=instance_id,
+        version_a=request.version_a,
+        version_b=request.version_b,
+        org_id=current_user.org_id,
+    )
+
+    return WorkflowVersionCompareResponse(
+        version_a=comparison["version_a"],
+        version_b=comparison["version_b"],
+    ).model_dump()

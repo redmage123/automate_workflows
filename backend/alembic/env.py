@@ -23,10 +23,15 @@ from app.models.base import Base
 
 # Import all models so they're registered with Base
 # WHY: This ensures all model tables are included in migrations
-from app.models import user  # noqa: F401
-# TODO: Import additional models as they are created
-# from app.models import organization, project, proposal, etc.
+# NOTE: Importing from models package imports all models via __init__.py
+from app.models import *  # noqa: F401, F403
 
+# WHY: Clear any enum types that were auto-registered to metadata
+# This prevents "type already exists" errors during migrations since
+# migrations handle enum creation explicitly with IF NOT EXISTS checks.
+# The metadata._enums dictionary holds registered PostgreSQL enum types.
+if hasattr(Base.metadata, '_enums'):
+    Base.metadata._enums.clear()
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

@@ -1,8 +1,8 @@
 # Master Kanban Board - Automation Services Platform
 
 **Last Updated:** 2025-12-11
-**Current Sprint**: MVP Complete!
-**Sprint Velocity**: Sprint 1: 67pts | Sprint 2: 26/31pts | Sprint 3: 79pts | Sprint 4: 71pts | Sprint 5: 82pts | Sprint 6: 41pts | Sprint 7: 75pts | Sprint 8: 28pts
+**Current Sprint**: Sprint 9 - OAuth & Subscriptions ✅ Complete
+**Sprint Velocity**: Sprint 1: 67pts | Sprint 2: 26pts | Sprint 3: 79pts | Sprint 4: 71pts | Sprint 5: 82pts | Sprint 6: 41pts | Sprint 7: 75pts | Sprint 8: 28pts | Sprint 9: 36pts
 
 ## Legend
 
@@ -268,12 +268,89 @@ Note: POLISH-004 (Form validation) and POLISH-005 (Responsive audit) moved to ba
 
 ---
 
+## Sprint 9: OAuth & Subscriptions ✅ COMPLETE
+
+**Sprint Goal**: Add Google OAuth authentication and Stripe subscription management.
+
+**Completed**: 2025-12-11
+
+| ID | Feature | Sub-Board | Effort | Status | Notes |
+|----|---------|-----------|--------|--------|-------|
+| ADR-009 | OAuth & Subscriptions ADR | docs/adr | 2 | 🟢 | Architecture documented |
+| AUTH-010 | OAuth (Google) integration | auth-security.md | 13 | 🟢 | OAuthAccount model, DAO, service, API |
+| PAY-010 | Subscription management | billing-payments.md | 13 | 🟢 | Subscription model, DAO, service, API, webhooks |
+| POLISH-004 | Form validation improvements | Frontend | 3 | 🟢 | react-hook-form + zod, reusable components |
+| POLISH-005 | Responsive design audit | Frontend | 5 | 🟢 | Mobile card views, responsive grids |
+
+**Sprint 9 Total**: 36 points | **Completed**: 36 points
+
+### AUTH-010: Google OAuth Implementation Details
+- OAuthAccount model for storing linked accounts
+- OAuthAccountDAO with token encryption
+- OAuthService with Google OAuth 2.0 flow
+- OAuth API endpoints:
+  - `GET /api/auth/oauth/providers` - List available providers
+  - `GET /api/auth/oauth/google` - Initiate OAuth flow
+  - `GET /api/auth/oauth/google/callback` - Handle callback
+  - `GET /api/auth/oauth/accounts` - List linked accounts
+  - `POST /api/auth/oauth/accounts/{provider}/unlink` - Unlink account
+- State parameter for CSRF protection
+- Token encryption at rest (Fernet)
+
+### PAY-010: Subscription Management Implementation Details
+- Subscription model with plan tiers (Free, Pro, Enterprise)
+- Plan limits enforcement (projects, workflows, users, storage)
+- SubscriptionDAO with Stripe integration methods
+- SubscriptionService for business logic
+- Subscription API endpoints:
+  - `GET /api/subscriptions/plans` - List available plans
+  - `GET /api/subscriptions` - Get current subscription with usage
+  - `GET /api/subscriptions/summary` - Lightweight summary
+  - `POST /api/subscriptions/checkout` - Stripe Checkout
+  - `POST /api/subscriptions/portal` - Stripe Customer Portal
+  - `POST /api/subscriptions/cancel` - Cancel subscription
+  - `POST /api/subscriptions/reactivate` - Reactivate subscription
+  - `GET /api/subscriptions/admin/stats` - Admin statistics
+  - `PATCH /api/subscriptions/admin/{org_id}` - Admin override
+- Stripe webhook handler for subscription events
+
+### POLISH-004: Form Validation Implementation Details
+- Installed zod and @hookform/resolvers for schema validation
+- Created validation utilities at `src/utils/validation.ts`:
+  - Common patterns: emailSchema, passwordSchema, strongPasswordSchema
+  - Form schemas: loginSchema, registerSchema, projectSchema, ticketSchema
+  - Type inference with `z.infer<typeof schema>`
+- Created reusable form components in `src/components/forms/`:
+  - FormField.tsx - Label, error display, help text wrapper
+  - Input.tsx - Styled input with error state, forwardRef for react-hook-form
+  - Select.tsx - Styled select with error state
+  - Textarea.tsx - Styled textarea with error state
+  - FormError.tsx - Form-level error alert
+  - SubmitButton.tsx - Submit button with loading state spinner
+- Updated auth pages with react-hook-form + zod:
+  - Login.tsx - Email/password validation
+  - Register.tsx - Strong password validation with confirmation match
+  - ForgotPassword.tsx - Email validation
+- Updated form pages with react-hook-form + zod:
+  - TicketFormPage.tsx - Field-level validation
+  - ProjectFormPage.tsx - Date validation (due >= start)
+
+### POLISH-005: Responsive Design Audit Implementation Details
+- MainLayout: Mobile sidebar with hamburger menu (already responsive)
+- Dashboard: Responsive grid (1-col mobile, 2-col sm, 4-col lg)
+- TicketsPage: Added mobile card view alternative to table
+  - Cards shown on small screens (md:hidden)
+  - Table shown on medium+ screens (hidden md:block)
+  - SLA indicators, badges, and actions in card format
+- Form pages: Using responsive grids (sm:grid-cols-2)
+- Stats cards: Responsive grid layouts across all pages
+
+---
+
 ## Backlog (Future Sprints)
 
 | ID | Feature | Effort | Priority |
 |----|---------|--------|----------|
-| AUTH-010 | OAuth (Google) integration | 13 | P2 |
-| PAY-010 | Subscription management | 13 | P2 |
 | RUST-001 | Rust webhook gateway | 21 | P3 |
 | RUST-002 | Rust secrets proxy | 21 | P3 |
 | SSO-001 | SAML/OIDC integration | 21 | P3 |
@@ -289,16 +366,18 @@ Note: POLISH-004 (Form validation) and POLISH-005 (Responsive audit) moved to ba
 | Sprint | Focus | Points | Status |
 |--------|-------|--------|--------|
 | Sprint 1 | Foundation | 67 | 🟢 Complete |
-| Sprint 2 | Auth & Orgs | 31 | 🟢 Complete (26/31) |
+| Sprint 2 | Auth & Orgs | 26 | 🟢 Complete |
 | Sprint 3 | Projects & Proposals | 79 | 🟢 Complete |
 | Sprint 4 | Billing & Payments | 71 | 🟢 Complete |
 | Sprint 5 | Workflow Automation | 82 | 🟢 Complete |
 | Sprint 6 | Ticketing & Notifications | 41 | 🟢 Complete |
 | Sprint 7 | Admin & Analytics | 75 | 🟢 Complete |
 | Sprint 8 | Notifications & Polish | 28 | 🟢 Complete |
-| **MVP Total** | | **474 points** | 🎉 COMPLETE |
+| Sprint 9 | OAuth & Subscriptions | 36 | 🟢 Complete |
+| **MVP Total** | | **469 points** | 🎉 COMPLETE |
+| **Post-MVP** | | **36 points** | 🟢 Complete |
 
-**Completed**: 474 points (100% of MVP)
+**Total Completed**: 505 points (MVP + Sprint 9)
 
 ---
 

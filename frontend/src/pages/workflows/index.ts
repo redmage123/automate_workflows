@@ -11,5 +11,6 @@
 export { default as WorkflowsPage } from './WorkflowsPage';
 export { default as WorkflowDetailPage } from './WorkflowDetailPage';
 export { default as WorkflowFormPage } from './WorkflowFormPage';
+export { default as WorkflowAIPage } from './WorkflowAIPage';
 export { default as TemplatesPage } from './TemplatesPage';
 export { default as EnvironmentsPage } from './EnvironmentsPage';

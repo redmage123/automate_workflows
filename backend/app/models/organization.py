@@ -65,5 +65,15 @@ class Organization(Base, PrimaryKeyMixin, TimestampMixin):
     workflow_instances = relationship("WorkflowInstance", back_populates="organization", lazy="dynamic")
     tickets = relationship("Ticket", back_populates="organization", lazy="dynamic")
 
+    # Subscription relationship (1:1)
+    # WHY: Each organization has exactly one subscription that tracks their
+    # billing plan and limits. Using uselist=False enforces the 1:1 relationship.
+    subscription = relationship(
+        "Subscription",
+        back_populates="organization",
+        uselist=False,
+        lazy="joined",  # Eager load for quick access to plan limits
+    )
+
     def __repr__(self) -> str:
         return f"<Organization(id={self.id}, name={self.name})>"

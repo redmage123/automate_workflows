@@ -64,6 +64,8 @@ export interface LoginRequest {
 export interface RegisterRequest {
   email: string;
   password: string;
+  password_confirm: string;
+  name: string;
   organization_name: string;
 }
 

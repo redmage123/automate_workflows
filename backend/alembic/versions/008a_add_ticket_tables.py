@@ -1,6 +1,6 @@
 """Add ticket tables for support ticketing system.
 
-Revision ID: 008
+Revision ID: 008a
 Revises: 007
 Create Date: 2025-12-11
 
@@ -19,7 +19,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = "008"
+revision = "008a"
 down_revision = "007"
 branch_labels = None
 depends_on = None
@@ -35,26 +35,33 @@ def upgrade() -> None:
     - ticket_attachments: File attachments on tickets/comments
     """
 
-    # Create ticketstatus enum
-    ticketstatus_enum = sa.Enum(
-        "open", "in_progress", "waiting", "resolved", "closed",
-        name="ticketstatus"
-    )
-    ticketstatus_enum.create(op.get_bind(), checkfirst=True)
+    # Create ticket enums using raw SQL
+    op.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ticketstatus') THEN
+                CREATE TYPE ticketstatus AS ENUM ('open', 'in_progress', 'waiting', 'resolved', 'closed');
+            END IF;
+        END$$;
+    """)
 
-    # Create ticketpriority enum
-    ticketpriority_enum = sa.Enum(
-        "low", "medium", "high", "urgent",
-        name="ticketpriority"
-    )
-    ticketpriority_enum.create(op.get_bind(), checkfirst=True)
+    op.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ticketpriority') THEN
+                CREATE TYPE ticketpriority AS ENUM ('low', 'medium', 'high', 'urgent');
+            END IF;
+        END$$;
+    """)
 
-    # Create ticketcategory enum
-    ticketcategory_enum = sa.Enum(
-        "bug", "feature", "question", "support",
-        name="ticketcategory"
-    )
-    ticketcategory_enum.create(op.get_bind(), checkfirst=True)
+    op.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ticketcategory') THEN
+                CREATE TYPE ticketcategory AS ENUM ('general', 'bug', 'feature', 'question', 'support');
+            END IF;
+        END$$;
+    """)
 
     # Create tickets table
     op.create_table(
@@ -86,24 +93,9 @@ def upgrade() -> None:
         ),
         sa.Column("subject", sa.String(500), nullable=False),
         sa.Column("description", sa.Text(), nullable=False),
-        sa.Column(
-            "status",
-            ticketstatus_enum,
-            nullable=False,
-            server_default="open",
-        ),
-        sa.Column(
-            "priority",
-            ticketpriority_enum,
-            nullable=False,
-            server_default="medium",
-        ),
-        sa.Column(
-            "category",
-            ticketcategory_enum,
-            nullable=False,
-            server_default="support",
-        ),
+        sa.Column("status", sa.String(50), nullable=False, server_default="open"),
+        sa.Column("priority", sa.String(50), nullable=False, server_default="medium"),
+        sa.Column("category", sa.String(50), nullable=False, server_default="support"),
         sa.Column("sla_response_due_at", sa.DateTime(), nullable=True),
         sa.Column("sla_resolution_due_at", sa.DateTime(), nullable=True),
         sa.Column("first_response_at", sa.DateTime(), nullable=True),
@@ -117,6 +109,19 @@ def upgrade() -> None:
         ),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
     )
+
+    # Convert String columns to enum types
+    op.execute("ALTER TABLE tickets ALTER COLUMN status DROP DEFAULT")
+    op.execute("ALTER TABLE tickets ALTER COLUMN status TYPE ticketstatus USING status::ticketstatus")
+    op.execute("ALTER TABLE tickets ALTER COLUMN status SET DEFAULT 'open'::ticketstatus")
+
+    op.execute("ALTER TABLE tickets ALTER COLUMN priority DROP DEFAULT")
+    op.execute("ALTER TABLE tickets ALTER COLUMN priority TYPE ticketpriority USING priority::ticketpriority")
+    op.execute("ALTER TABLE tickets ALTER COLUMN priority SET DEFAULT 'medium'::ticketpriority")
+
+    op.execute("ALTER TABLE tickets ALTER COLUMN category DROP DEFAULT")
+    op.execute("ALTER TABLE tickets ALTER COLUMN category TYPE ticketcategory USING category::ticketcategory")
+    op.execute("ALTER TABLE tickets ALTER COLUMN category SET DEFAULT 'support'::ticketcategory")
 
     # Create indexes for tickets
     op.create_index("ix_tickets_org_id", "tickets", ["org_id"])

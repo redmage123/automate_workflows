@@ -128,14 +128,26 @@ class Project(Base):
     )
 
     # Status and priority
+    # WHY: create_type=False because the enum types are created explicitly in migrations
+    # WHY: values_callable ensures the enum value (lowercase) is used, not the name (UPPERCASE)
     status: Mapped[ProjectStatus] = Column(
-        SQLEnum(ProjectStatus),
+        SQLEnum(
+            ProjectStatus,
+            name="projectstatus",
+            create_type=False,
+            values_callable=lambda enum: [e.value for e in enum],
+        ),
         nullable=False,
         default=ProjectStatus.DRAFT,
         comment="Current project status",
     )
     priority: Mapped[ProjectPriority] = Column(
-        SQLEnum(ProjectPriority),
+        SQLEnum(
+            ProjectPriority,
+            name="projectpriority",
+            create_type=False,
+            values_callable=lambda enum: [e.value for e in enum],
+        ),
         nullable=False,
         default=ProjectPriority.MEDIUM,
         comment="Project priority level",

@@ -29,19 +29,25 @@ depends_on = None
 def upgrade() -> None:
     """Create workflow automation tables."""
 
-    # Create workflow status enum
-    workflow_status = sa.Enum(
-        "draft", "active", "paused", "error", "deleted",
-        name="workflowstatus"
-    )
-    workflow_status.create(op.get_bind(), checkfirst=True)
+    # Create workflow status enum using raw SQL to avoid SQLAlchemy auto-creation
+    op.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'workflowstatus') THEN
+                CREATE TYPE workflowstatus AS ENUM ('draft', 'active', 'paused', 'error', 'deleted');
+            END IF;
+        END$$;
+    """)
 
     # Create execution status enum
-    execution_status = sa.Enum(
-        "running", "success", "failed", "cancelled",
-        name="executionstatus"
-    )
-    execution_status.create(op.get_bind(), checkfirst=True)
+    op.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'executionstatus') THEN
+                CREATE TYPE executionstatus AS ENUM ('running', 'success', 'failed', 'cancelled');
+            END IF;
+        END$$;
+    """)
 
     # N8n environments table
     op.create_table(
@@ -116,17 +122,17 @@ def upgrade() -> None:
         ),
         sa.Column("n8n_workflow_id", sa.String(100), nullable=True),
         sa.Column("name", sa.String(255), nullable=False),
-        sa.Column(
-            "status",
-            workflow_status,
-            server_default="draft",
-            nullable=False,
-        ),
+        sa.Column("status", sa.String(50), server_default="draft", nullable=False),
         sa.Column("parameters", sa.JSON(), nullable=True),
         sa.Column("last_execution_at", sa.DateTime(), nullable=True),
         sa.Column("created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
     )
+    # Convert workflow_instances.status to enum
+    op.execute("ALTER TABLE workflow_instances ALTER COLUMN status DROP DEFAULT")
+    op.execute("ALTER TABLE workflow_instances ALTER COLUMN status TYPE workflowstatus USING status::workflowstatus")
+    op.execute("ALTER TABLE workflow_instances ALTER COLUMN status SET DEFAULT 'draft'::workflowstatus")
+
     op.create_index("ix_workflow_instances_org_id", "workflow_instances", ["org_id"])
     op.create_index("ix_workflow_instances_project_id", "workflow_instances", ["project_id"])
     op.create_index("ix_workflow_instances_status", "workflow_instances", ["status"])
@@ -142,12 +148,7 @@ def upgrade() -> None:
             nullable=False,
         ),
         sa.Column("n8n_execution_id", sa.String(100), nullable=True),
-        sa.Column(
-            "status",
-            execution_status,
-            server_default="running",
-            nullable=False,
-        ),
+        sa.Column("status", sa.String(50), server_default="running", nullable=False),
         sa.Column("started_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
         sa.Column("finished_at", sa.DateTime(), nullable=True),
         sa.Column("input_data", sa.JSON(), nullable=True),
@@ -155,6 +156,11 @@ def upgrade() -> None:
         sa.Column("error_message", sa.Text(), nullable=True),
         sa.Column("created_at", sa.DateTime(), server_default=sa.func.now(), nullable=False),
     )
+    # Convert execution_logs.status to enum
+    op.execute("ALTER TABLE execution_logs ALTER COLUMN status DROP DEFAULT")
+    op.execute("ALTER TABLE execution_logs ALTER COLUMN status TYPE executionstatus USING status::executionstatus")
+    op.execute("ALTER TABLE execution_logs ALTER COLUMN status SET DEFAULT 'running'::executionstatus")
+
     op.create_index("ix_execution_logs_instance_id", "execution_logs", ["workflow_instance_id"])
     op.create_index("ix_execution_logs_status", "execution_logs", ["status"])
     op.create_index("ix_execution_logs_started_at", "execution_logs", ["started_at"])

@@ -78,8 +78,9 @@ class SLABackgroundService:
             return self._session_factory()
 
         # Create engine and session on demand
+        # WHY: Using async_database_url property which converts the sync URL to async format
         engine = create_async_engine(
-            settings.ASYNC_DATABASE_URL,
+            settings.async_database_url,
             echo=False,
             pool_pre_ping=True,
         )

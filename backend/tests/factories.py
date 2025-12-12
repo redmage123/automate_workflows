@@ -19,11 +19,23 @@ from app.models.project import Project, ProjectStatus, ProjectPriority
 from app.models.proposal import Proposal, ProposalStatus
 from app.models.invoice import Invoice, InvoiceStatus
 from app.models.ticket import Ticket, TicketStatus, TicketPriority, TicketCategory
+from app.models.integration import (
+    CalendarIntegration,
+    WebhookEndpoint,
+    WebhookDelivery,
+    CalendarProvider,
+    WebhookEventType,
+)
 from app.dao.user import UserDAO
 from app.dao.project import ProjectDAO
 from app.dao.proposal import ProposalDAO
 from app.dao.invoice import InvoiceDAO
 from app.dao.ticket import TicketDAO, TicketCommentDAO, TicketAttachmentDAO
+from app.dao.integration import (
+    CalendarIntegrationDAO,
+    WebhookEndpointDAO,
+    WebhookDeliveryDAO,
+)
 from app.core.auth import hash_password
 
 
@@ -1141,3 +1153,522 @@ class TicketCommentFactory:
             content=content,
             is_internal=True,
         )
+
+
+class DocumentFactory:
+    """
+    Factory for creating Document test instances.
+
+    WHY: Centralizes document creation logic for tests,
+    enabling consistent test data for document management features.
+    """
+
+    @staticmethod
+    async def create(
+        session: AsyncSession,
+        filename: str = "test_document.pdf",
+        original_filename: str = "Test Document.pdf",
+        content_type: str = "application/pdf",
+        file_size: int = 1024000,
+        s3_key: Optional[str] = None,
+        s3_bucket: str = "test-bucket",
+        folder: str = "/",
+        tags: Optional[List[str]] = None,
+        description: Optional[str] = None,
+        entity_type: Optional[str] = None,
+        entity_id: Optional[int] = None,
+        org_id: Optional[int] = None,
+        organization: Optional[Organization] = None,
+        uploaded_by: Optional[int] = None,
+        uploader: Optional[User] = None,
+    ):
+        """
+        Create a document for testing.
+
+        Args:
+            session: Database session
+            filename: Stored filename
+            original_filename: Original upload filename
+            content_type: MIME type
+            file_size: Size in bytes
+            s3_key: S3 object key (auto-generated if not provided)
+            s3_bucket: S3 bucket name
+            folder: Folder path
+            tags: List of tags
+            description: Document description
+            entity_type: Linked entity type
+            entity_id: Linked entity ID
+            org_id: Organization ID
+            organization: Organization instance
+            uploaded_by: Uploader user ID
+            uploader: Uploader user instance
+
+        Returns:
+            Created Document instance
+        """
+        from app.dao.document import DocumentDAO
+
+        # Handle organization
+        if organization is not None:
+            org_id = organization.id
+        elif org_id is None:
+            organization = await OrganizationFactory.create(
+                session, name=f"Org for {filename}"
+            )
+            org_id = organization.id
+
+        # Handle uploader
+        if uploader is not None:
+            uploaded_by = uploader.id
+        elif uploaded_by is None:
+            uploader = await UserFactory.create(
+                session,
+                email=f"uploader-{datetime.utcnow().timestamp()}@example.com",
+                org_id=org_id,
+            )
+            uploaded_by = uploader.id
+
+        # Generate S3 key if not provided
+        if s3_key is None:
+            import uuid
+            unique_id = str(uuid.uuid4())[:8]
+            s3_key = f"orgs/{org_id}/documents/{unique_id}_{filename}"
+
+        doc_dao = DocumentDAO(session)
+        document = await doc_dao.create_document(
+            org_id=org_id,
+            uploaded_by=uploaded_by,
+            filename=filename,
+            original_filename=original_filename,
+            content_type=content_type,
+            file_size=file_size,
+            s3_key=s3_key,
+            s3_bucket=s3_bucket,
+            folder=folder,
+            tags=tags,
+            description=description,
+            entity_type=entity_type,
+            entity_id=entity_id,
+        )
+
+        return document
+
+    @staticmethod
+    async def create_for_project(
+        session: AsyncSession,
+        project: Project,
+        filename: str = "project_document.pdf",
+        uploader: Optional[User] = None,
+        **kwargs,
+    ):
+        """Create a document attached to a project."""
+        return await DocumentFactory.create(
+            session=session,
+            filename=filename,
+            organization=None,
+            org_id=project.org_id,
+            entity_type="project",
+            entity_id=project.id,
+            uploader=uploader,
+            **kwargs,
+        )
+
+    @staticmethod
+    async def create_for_ticket(
+        session: AsyncSession,
+        ticket: Ticket,
+        filename: str = "ticket_attachment.pdf",
+        uploader: Optional[User] = None,
+        **kwargs,
+    ):
+        """Create a document attached to a ticket."""
+        return await DocumentFactory.create(
+            session=session,
+            filename=filename,
+            organization=None,
+            org_id=ticket.org_id,
+            entity_type="ticket",
+            entity_id=ticket.id,
+            uploader=uploader,
+            **kwargs,
+        )
+
+
+class CalendarIntegrationFactory:
+    """
+    Factory for creating CalendarIntegration test instances.
+
+    WHY: Centralizes calendar integration creation logic for tests,
+    enabling consistent test data for external integration features.
+    """
+
+    @staticmethod
+    async def create(
+        session: AsyncSession,
+        provider: str = CalendarProvider.GOOGLE.value,
+        provider_email: Optional[str] = None,
+        access_token: str = "test_access_token_12345",
+        refresh_token: str = "test_refresh_token_67890",
+        token_expires_at: Optional[datetime] = None,
+        calendar_id: Optional[str] = None,
+        calendar_name: Optional[str] = "Test Calendar",
+        sync_enabled: bool = True,
+        sync_projects: bool = True,
+        sync_tickets: bool = False,
+        sync_invoices: bool = False,
+        is_active: bool = True,
+        org_id: Optional[int] = None,
+        organization: Optional[Organization] = None,
+        user_id: Optional[int] = None,
+        user: Optional[User] = None,
+    ) -> CalendarIntegration:
+        """
+        Create a calendar integration for testing.
+
+        Args:
+            session: Database session
+            provider: Calendar provider (google, outlook, etc.)
+            provider_email: Email from provider
+            access_token: OAuth access token
+            refresh_token: OAuth refresh token
+            token_expires_at: Token expiration time
+            calendar_id: Calendar ID
+            calendar_name: Calendar display name
+            sync_enabled: Whether sync is enabled
+            sync_projects: Sync projects to calendar
+            sync_tickets: Sync tickets to calendar
+            sync_invoices: Sync invoices to calendar
+            is_active: Whether integration is active
+            org_id: Organization ID
+            organization: Organization instance
+            user_id: User ID
+            user: User instance
+
+        Returns:
+            Created CalendarIntegration instance
+        """
+        # Handle organization
+        if organization is not None:
+            org_id = organization.id
+        elif org_id is None:
+            organization = await OrganizationFactory.create(
+                session, name=f"Org for calendar integration"
+            )
+            org_id = organization.id
+
+        # Handle user
+        if user is not None:
+            user_id = user.id
+        elif user_id is None:
+            user = await UserFactory.create(
+                session,
+                email=f"cal-user-{datetime.utcnow().timestamp()}@example.com",
+                org_id=org_id,
+            )
+            user_id = user.id
+
+        # Set default token expiration
+        if token_expires_at is None:
+            token_expires_at = datetime.utcnow() + timedelta(hours=1)
+
+        # Set default provider email
+        if provider_email is None:
+            provider_email = f"calendar-{user_id}@{provider}.com"
+
+        dao = CalendarIntegrationDAO(session)
+        integration = CalendarIntegration(
+            user_id=user_id,
+            org_id=org_id,
+            provider=provider,
+            provider_email=provider_email,
+            access_token=access_token,
+            refresh_token=refresh_token,
+            token_expires_at=token_expires_at,
+            calendar_id=calendar_id,
+            calendar_name=calendar_name,
+            sync_enabled=sync_enabled,
+            sync_projects=sync_projects,
+            sync_tickets=sync_tickets,
+            sync_invoices=sync_invoices,
+            is_active=is_active,
+        )
+        return await dao.create(integration)
+
+    @staticmethod
+    async def create_expired(
+        session: AsyncSession,
+        user: Optional[User] = None,
+        organization: Optional[Organization] = None,
+        **kwargs,
+    ) -> CalendarIntegration:
+        """Create a calendar integration with expired token."""
+        return await CalendarIntegrationFactory.create(
+            session=session,
+            user=user,
+            organization=organization,
+            token_expires_at=datetime.utcnow() - timedelta(hours=1),
+            **kwargs,
+        )
+
+    @staticmethod
+    async def create_inactive(
+        session: AsyncSession,
+        user: Optional[User] = None,
+        organization: Optional[Organization] = None,
+        **kwargs,
+    ) -> CalendarIntegration:
+        """Create an inactive calendar integration."""
+        return await CalendarIntegrationFactory.create(
+            session=session,
+            user=user,
+            organization=organization,
+            is_active=False,
+            error_message="Integration disabled by user",
+            **kwargs,
+        )
+
+
+class WebhookEndpointFactory:
+    """
+    Factory for creating WebhookEndpoint test instances.
+
+    WHY: Centralizes webhook endpoint creation logic for tests,
+    enabling consistent test data for webhook features.
+    """
+
+    @staticmethod
+    async def create(
+        session: AsyncSession,
+        name: str = "Test Webhook",
+        description: Optional[str] = None,
+        url: str = "https://example.com/webhook",
+        secret: Optional[str] = None,
+        events: Optional[List[str]] = None,
+        headers: Optional[Dict[str, str]] = None,
+        is_active: bool = True,
+        retry_enabled: bool = True,
+        max_retries: int = 3,
+        org_id: Optional[int] = None,
+        organization: Optional[Organization] = None,
+        created_by_id: Optional[int] = None,
+        created_by: Optional[User] = None,
+    ) -> WebhookEndpoint:
+        """
+        Create a webhook endpoint for testing.
+
+        Args:
+            session: Database session
+            name: Webhook name
+            description: Webhook description
+            url: Webhook URL
+            secret: Signing secret (auto-generated if not provided)
+            events: Event types to subscribe to
+            headers: Custom headers
+            is_active: Whether endpoint is active
+            retry_enabled: Whether retries are enabled
+            max_retries: Maximum retry attempts
+            org_id: Organization ID
+            organization: Organization instance
+            created_by_id: Creator user ID
+            created_by: Creator user instance
+
+        Returns:
+            Created WebhookEndpoint instance
+        """
+        import secrets as sec
+
+        # Handle organization
+        if organization is not None:
+            org_id = organization.id
+        elif org_id is None:
+            organization = await OrganizationFactory.create(
+                session, name=f"Org for {name}"
+            )
+            org_id = organization.id
+
+        # Handle creator
+        if created_by is not None:
+            created_by_id = created_by.id
+
+        # Generate secret if not provided
+        if secret is None:
+            secret = f"whsec_{sec.token_urlsafe(32)}"
+
+        # Default events
+        if events is None:
+            events = [WebhookEventType.TICKET_CREATED.value]
+
+        dao = WebhookEndpointDAO(session)
+        endpoint = WebhookEndpoint(
+            org_id=org_id,
+            name=name,
+            description=description or f"Description for {name}",
+            url=url,
+            secret=secret,
+            events=events,
+            headers=headers,
+            is_active=is_active,
+            retry_enabled=retry_enabled,
+            max_retries=max_retries,
+            created_by_id=created_by_id,
+        )
+        return await dao.create(endpoint)
+
+    @staticmethod
+    async def create_all_events(
+        session: AsyncSession,
+        name: str = "All Events Webhook",
+        organization: Optional[Organization] = None,
+        **kwargs,
+    ) -> WebhookEndpoint:
+        """Create a webhook subscribed to all events."""
+        return await WebhookEndpointFactory.create(
+            session=session,
+            name=name,
+            organization=organization,
+            events=["*"],
+            **kwargs,
+        )
+
+    @staticmethod
+    async def create_ticket_events(
+        session: AsyncSession,
+        name: str = "Ticket Webhook",
+        organization: Optional[Organization] = None,
+        **kwargs,
+    ) -> WebhookEndpoint:
+        """Create a webhook subscribed to ticket events."""
+        return await WebhookEndpointFactory.create(
+            session=session,
+            name=name,
+            organization=organization,
+            events=["ticket.*"],
+            **kwargs,
+        )
+
+
+class WebhookDeliveryFactory:
+    """
+    Factory for creating WebhookDelivery test instances.
+
+    WHY: Centralizes webhook delivery creation logic for tests,
+    enabling consistent test data for delivery tracking features.
+    """
+
+    @staticmethod
+    async def create(
+        session: AsyncSession,
+        endpoint: WebhookEndpoint,
+        event_type: str = WebhookEventType.TICKET_CREATED.value,
+        event_id: Optional[str] = None,
+        request_body: Optional[Dict[str, Any]] = None,
+        response_status: Optional[int] = None,
+        response_body: Optional[str] = None,
+        delivered: bool = False,
+        attempt_count: int = 1,
+        duration_ms: Optional[int] = None,
+        error_message: Optional[str] = None,
+    ) -> WebhookDelivery:
+        """
+        Create a webhook delivery for testing.
+
+        Args:
+            session: Database session
+            endpoint: Webhook endpoint
+            event_type: Event type
+            event_id: Event ID (auto-generated if not provided)
+            request_body: Request payload
+            response_status: HTTP response status
+            response_body: HTTP response body
+            delivered: Whether delivery succeeded
+            attempt_count: Number of attempts
+            duration_ms: Request duration in ms
+            error_message: Error message if failed
+
+        Returns:
+            Created WebhookDelivery instance
+        """
+        import uuid
+
+        if event_id is None:
+            event_id = str(uuid.uuid4())
+
+        if request_body is None:
+            request_body = {
+                "event_type": event_type,
+                "event_id": event_id,
+                "data": {"test": True},
+            }
+
+        dao = WebhookDeliveryDAO(session)
+        delivery = WebhookDelivery(
+            endpoint_id=endpoint.id,
+            event_type=event_type,
+            event_id=event_id,
+            request_url=endpoint.url,
+            request_headers={"Content-Type": "application/json"},
+            request_body=request_body,
+            response_status=response_status,
+            response_body=response_body,
+            delivered=delivered,
+            attempt_count=attempt_count,
+            duration_ms=duration_ms,
+            error_message=error_message,
+        )
+        return await dao.create(delivery)
+
+    @staticmethod
+    async def create_successful(
+        session: AsyncSession,
+        endpoint: WebhookEndpoint,
+        **kwargs,
+    ) -> WebhookDelivery:
+        """Create a successful webhook delivery."""
+        return await WebhookDeliveryFactory.create(
+            session=session,
+            endpoint=endpoint,
+            delivered=True,
+            response_status=200,
+            response_body='{"status": "ok"}',
+            duration_ms=150,
+            **kwargs,
+        )
+
+    @staticmethod
+    async def create_failed(
+        session: AsyncSession,
+        endpoint: WebhookEndpoint,
+        **kwargs,
+    ) -> WebhookDelivery:
+        """Create a failed webhook delivery."""
+        return await WebhookDeliveryFactory.create(
+            session=session,
+            endpoint=endpoint,
+            delivered=False,
+            response_status=500,
+            response_body='{"error": "Internal Server Error"}',
+            duration_ms=5000,
+            error_message="HTTP 500",
+            **kwargs,
+        )
+
+    @staticmethod
+    async def create_pending_retry(
+        session: AsyncSession,
+        endpoint: WebhookEndpoint,
+        **kwargs,
+    ) -> WebhookDelivery:
+        """Create a delivery pending retry."""
+        delivery = await WebhookDeliveryFactory.create(
+            session=session,
+            endpoint=endpoint,
+            delivered=False,
+            response_status=503,
+            error_message="Service Unavailable",
+            **kwargs,
+        )
+        # Set next retry time
+        delivery.next_retry_at = datetime.utcnow() - timedelta(minutes=1)
+        await session.commit()
+        await session.refresh(delivery)
+        return delivery

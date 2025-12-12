@@ -48,7 +48,8 @@ class User(Base, PrimaryKeyMixin, TimestampMixin):
     # Authorization
     # WHY: Role determines what actions the user can perform.
     # Default CLIENT role ensures least-privilege access (A01: Broken Access Control)
-    role = Column(Enum(UserRole), nullable=False, default=UserRole.CLIENT)
+    # create_type=False because the enum type is created explicitly in migration 001
+    role = Column(Enum(UserRole, name="userrole", create_type=False), nullable=False, default=UserRole.CLIENT)
 
     # Multi-tenancy
     # WHY: org_id is indexed for query performance and marked NOT NULL to enforce
@@ -68,6 +69,14 @@ class User(Base, PrimaryKeyMixin, TimestampMixin):
 
     # Relationships
     organization = relationship("Organization", back_populates="users")
+    # OAuth accounts - allows multiple social logins per user
+    # WHY: A user might want to link both Google and GitHub for convenience.
+    # cascade="all, delete-orphan" ensures OAuth accounts are deleted when user is deleted.
+    oauth_accounts = relationship(
+        "OAuthAccount",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
     # TODO: Uncomment when AuditLog model is created
     # audit_logs = relationship("AuditLog", back_populates="actor_user", foreign_keys="[AuditLog.actor_user_id]")
 
@@ -84,6 +93,14 @@ class User(Base, PrimaryKeyMixin, TimestampMixin):
     )
     ticket_comments = relationship("TicketComment", back_populates="user")
     ticket_attachments = relationship("TicketAttachment", back_populates="uploaded_by")
+
+    # Push notification subscriptions
+    # WHY: Users may have multiple devices with push subscriptions
+    push_subscriptions = relationship(
+        "PushSubscription",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email={self.email}, role={self.role})>"

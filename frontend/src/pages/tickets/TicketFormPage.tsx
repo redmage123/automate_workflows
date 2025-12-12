@@ -10,15 +10,20 @@
  * - Optional project association
  * - File attachment support (future)
  *
- * HOW: Uses React Query mutations for API calls. Detects mode from URL
- * (new vs :id/edit) and fetches existing data for edit mode.
+ * HOW: Uses react-hook-form with zod validation and React Query
+ * mutations for API calls. Detects mode from URL (new vs :id/edit)
+ * and fetches existing data for edit mode.
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { getTicket, createTicket, updateTicket } from '../../services/tickets';
 import { getProjects } from '../../services/projects';
+import { ticketSchema, type TicketFormData } from '../../utils/validation';
+import { FormField, Input, Textarea, Select, FormError, SubmitButton } from '../../components/forms';
 import type {
   TicketCreateRequest,
   TicketUpdateRequest,
@@ -29,34 +34,6 @@ import {
   TICKET_PRIORITY_CONFIG,
   TICKET_CATEGORY_CONFIG,
 } from '../../types/ticket';
-
-/**
- * Form state type for managing ticket form data
- *
- * WHY: Typed form state ensures type safety and enables
- * IntelliSense for form field access.
- */
-interface FormState {
-  subject: string;
-  description: string;
-  priority: TicketPriority;
-  category: TicketCategory;
-  projectId: string;
-}
-
-/**
- * Default form values for new tickets
- *
- * WHY: Sensible defaults improve UX by reducing required input.
- * Medium priority is typical for most support requests.
- */
-const defaultFormState: FormState = {
-  subject: '',
-  description: '',
-  priority: 'medium',
-  category: 'general',
-  projectId: '',
-};
 
 /**
  * TicketFormPage Component
@@ -70,7 +47,7 @@ const defaultFormState: FormState = {
  * 1. Detects mode from URL parameters (new vs :id/edit)
  * 2. Fetches existing ticket data for edit mode
  * 3. Pre-fills project from URL query param if provided
- * 4. Validates form before submission
+ * 4. Validates form with zod before submission
  * 5. Navigates to ticket detail on success
  */
 export default function TicketFormPage() {
@@ -115,7 +92,7 @@ export default function TicketFormPage() {
    * WHY: Form needs to start with either default values (create)
    * or existing ticket values (edit). useMemo prevents recalculation.
    */
-  const initialFormState = useMemo<FormState>(() => {
+  const defaultValues = useMemo<TicketFormData>(() => {
     if (existingTicket) {
       return {
         subject: existingTicket.subject,
@@ -127,36 +104,32 @@ export default function TicketFormPage() {
     }
     // For new tickets, check for preselected project from URL
     return {
-      ...defaultFormState,
+      subject: '',
+      description: '',
+      priority: 'medium',
+      category: 'general',
       projectId: preselectedProjectId,
     };
   }, [existingTicket, preselectedProjectId]);
 
-  // Form state management
-  const [formState, setFormState] = useState<FormState>(initialFormState);
-  const [initializedTicketId, setInitializedTicketId] = useState<number | null>(null);
-  const [error, setError] = useState('');
+  // React Hook Form setup with zod validation
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<TicketFormData>({
+    resolver: zodResolver(ticketSchema),
+    defaultValues,
+  });
 
-  /**
-   * Update form state helper
-   *
-   * WHY: Partial updates allow changing single fields
-   * without specifying all other fields.
-   */
-  const updateForm = (updates: Partial<FormState>) => {
-    setFormState((prev) => ({ ...prev, ...updates }));
-  };
+  // Reset form when default values change (ticket loaded for edit)
+  useEffect(() => {
+    reset(defaultValues);
+  }, [defaultValues, reset]);
 
-  /**
-   * Re-initialize form when ticket loads (only once per ticket)
-   *
-   * WHY: When editing, we need to populate form with existing values
-   * once they're fetched. Tracking initialized ID prevents loops.
-   */
-  if (isEditMode && existingTicket && initializedTicketId !== existingTicket.id) {
-    setInitializedTicketId(existingTicket.id);
-    setFormState(initialFormState);
-  }
+  // Form-level error state for API errors
+  const [apiError, setApiError] = useState<string | null>(null);
 
   /**
    * Create ticket mutation
@@ -173,7 +146,7 @@ export default function TicketFormPage() {
       navigate(`/tickets/${ticket.id}`);
     },
     onError: (err: Error) => {
-      setError(err.message || 'Failed to create ticket');
+      setApiError(err.message || 'Failed to create ticket');
     },
   });
 
@@ -192,7 +165,7 @@ export default function TicketFormPage() {
       navigate(`/tickets/${ticketId}`);
     },
     onError: (err: Error) => {
-      setError(err.message || 'Failed to update ticket');
+      setApiError(err.message || 'Failed to update ticket');
     },
   });
 
@@ -201,44 +174,30 @@ export default function TicketFormPage() {
    *
    * WHAT: Validates form and submits to API.
    *
-   * WHY: Centralized validation ensures data integrity
-   * before API call.
+   * WHY: Zod validation ensures data integrity before API call.
    *
    * HOW:
-   * 1. Prevent default form submission
-   * 2. Validate required fields
-   * 3. Build request object
-   * 4. Call appropriate mutation (create or update)
+   * 1. Clear previous API errors
+   * 2. Build request object from validated form data
+   * 3. Call appropriate mutation (create or update)
    */
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-
-    // Validate required fields
-    if (!formState.subject.trim()) {
-      setError('Subject is required');
-      return;
-    }
-
-    if (!formState.description.trim()) {
-      setError('Description is required');
-      return;
-    }
+  const onSubmit = (data: TicketFormData) => {
+    setApiError(null);
 
     // Build request data
-    const data: TicketCreateRequest | TicketUpdateRequest = {
-      subject: formState.subject.trim(),
-      description: formState.description.trim(),
-      priority: formState.priority,
-      category: formState.category,
-      project_id: formState.projectId ? parseInt(formState.projectId, 10) : null,
+    const requestData: TicketCreateRequest | TicketUpdateRequest = {
+      subject: data.subject.trim(),
+      description: data.description.trim(),
+      priority: data.priority as TicketPriority,
+      category: data.category as TicketCategory,
+      project_id: data.projectId ? parseInt(data.projectId, 10) : null,
     };
 
     // Submit based on mode
     if (isEditMode) {
-      updateMutation.mutate(data as TicketUpdateRequest);
+      updateMutation.mutate(requestData as TicketUpdateRequest);
     } else {
-      createMutation.mutate(data as TicketCreateRequest);
+      createMutation.mutate(requestData as TicketCreateRequest);
     }
   };
 
@@ -279,130 +238,104 @@ export default function TicketFormPage() {
       </div>
 
       {/* Form Card */}
-      <form onSubmit={handleSubmit} className="card space-y-6">
-        {/* Error Display */}
-        {error && (
-          <div
-            className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700"
-            role="alert"
-          >
-            {error}
-          </div>
-        )}
+      <form onSubmit={handleSubmit(onSubmit)} className="card space-y-6">
+        {/* API Error Display */}
+        <FormError error={apiError} />
 
         {/* Subject Field */}
-        <div>
-          <label
-            htmlFor="subject"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Subject <span className="text-red-500">*</span>
-          </label>
-          <input
+        <FormField
+          label="Subject"
+          name="subject"
+          required
+          error={errors.subject}
+          helpText="A clear, concise summary helps us route your request faster"
+        >
+          <Input
             id="subject"
             type="text"
-            className="input w-full"
-            value={formState.subject}
-            onChange={(e) => updateForm({ subject: e.target.value })}
-            required
             maxLength={255}
             placeholder="Brief summary of the issue or request"
+            error={!!errors.subject}
+            errorId="subject-error"
+            {...register('subject')}
           />
-          <p className="mt-1 text-sm text-gray-500">
-            A clear, concise summary helps us route your request faster
-          </p>
-        </div>
+        </FormField>
 
         {/* Description Field */}
-        <div>
-          <label
-            htmlFor="description"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Description <span className="text-red-500">*</span>
-          </label>
-          <textarea
+        <FormField
+          label="Description"
+          name="description"
+          required
+          error={errors.description}
+        >
+          <Textarea
             id="description"
-            className="input w-full min-h-[180px]"
-            value={formState.description}
-            onChange={(e) => updateForm({ description: e.target.value })}
-            required
-            placeholder="Please provide details about your issue or request. Include:
+            rows={7}
+            placeholder={`Please provide details about your issue or request. Include:
 - What you were trying to do
 - What happened instead
 - Steps to reproduce (if applicable)
-- Any error messages you received"
+- Any error messages you received`}
+            error={!!errors.description}
+            errorId="description-error"
+            {...register('description')}
           />
-        </div>
+        </FormField>
 
         {/* Priority and Category Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Priority Selection */}
-          <div>
-            <label
-              htmlFor="priority"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Priority
-            </label>
-            <select
+          <FormField
+            label="Priority"
+            name="priority"
+            error={errors.priority}
+            helpText="Higher priority = faster SLA response time"
+          >
+            <Select
               id="priority"
-              className="input w-full"
-              value={formState.priority}
-              onChange={(e) =>
-                updateForm({ priority: e.target.value as TicketPriority })
-              }
+              error={!!errors.priority}
+              errorId="priority-error"
+              {...register('priority')}
             >
               {Object.entries(TICKET_PRIORITY_CONFIG).map(([value, config]) => (
                 <option key={value} value={value}>
                   {config.label}
                 </option>
               ))}
-            </select>
-            <p className="mt-1 text-xs text-gray-500">
-              Higher priority = faster SLA response time
-            </p>
-          </div>
+            </Select>
+          </FormField>
 
           {/* Category Selection */}
-          <div>
-            <label
-              htmlFor="category"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Category
-            </label>
-            <select
+          <FormField
+            label="Category"
+            name="category"
+            error={errors.category}
+          >
+            <Select
               id="category"
-              className="input w-full"
-              value={formState.category}
-              onChange={(e) =>
-                updateForm({ category: e.target.value as TicketCategory })
-              }
+              error={!!errors.category}
+              errorId="category-error"
+              {...register('category')}
             >
               {Object.entries(TICKET_CATEGORY_CONFIG).map(([value, config]) => (
                 <option key={value} value={value}>
                   {config.label}
                 </option>
               ))}
-            </select>
-          </div>
+            </Select>
+          </FormField>
         </div>
 
         {/* Project Association */}
         {projectsData && projectsData.items.length > 0 && (
-          <div>
-            <label
-              htmlFor="project"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Related Project
-            </label>
-            <select
-              id="project"
-              className="input w-full"
-              value={formState.projectId}
-              onChange={(e) => updateForm({ projectId: e.target.value })}
+          <FormField
+            label="Related Project"
+            name="projectId"
+            helpText="Linking to a project helps provide context for your request"
+          >
+            <Select
+              id="projectId"
+              {...register('projectId')}
             >
               <option value="">No project (general support)</option>
               {projectsData.items.map((project) => (
@@ -410,11 +343,8 @@ export default function TicketFormPage() {
                   {project.name}
                 </option>
               ))}
-            </select>
-            <p className="mt-1 text-sm text-gray-500">
-              Linking to a project helps provide context for your request
-            </p>
-          </div>
+            </Select>
+          </FormField>
         )}
 
         {/* Priority Info Box */}
@@ -450,17 +380,12 @@ export default function TicketFormPage() {
           >
             Cancel
           </Link>
-          <button
-            type="submit"
-            className="btn-primary"
-            disabled={isSubmitting}
+          <SubmitButton
+            isLoading={isSubmitting}
+            loadingText="Saving..."
           >
-            {isSubmitting
-              ? 'Saving...'
-              : isEditMode
-              ? 'Save Changes'
-              : 'Submit Ticket'}
-          </button>
+            {isEditMode ? 'Save Changes' : 'Submit Ticket'}
+          </SubmitButton>
         </div>
       </form>
     </div>

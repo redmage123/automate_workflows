@@ -19,7 +19,7 @@ from app.core.exception_handlers import (
     generic_exception_handler,
 )
 from app.middleware import SecurityHeadersMiddleware, RequestContextMiddleware, RateLimitMiddleware
-from app.api import auth, organizations, projects, proposals, invoices, workflows, tickets, admin, analytics, notification_preferences
+from app.api import auth, organizations, projects, proposals, invoices, workflows, tickets, admin, analytics, notification_preferences, oauth, subscriptions, workflow_ai, documents, time_entries, messages, activity, announcements, reports, onboarding, surveys, email_templates, push, integrations
 from app.services.scheduler import start_scheduler, shutdown_scheduler, get_scheduler_status
 
 
@@ -143,6 +143,21 @@ def create_app() -> FastAPI:
     app.include_router(admin.router, prefix="/api")
     app.include_router(analytics.router, prefix="/api")
     app.include_router(notification_preferences.router, prefix="/api")
+    app.include_router(oauth.router, prefix="/api/auth")
+    app.include_router(subscriptions.router, prefix="/api")
+    app.include_router(subscriptions.webhooks_router, prefix="/api")
+    app.include_router(workflow_ai.router, prefix="/api")
+    app.include_router(documents.router, prefix="/api")
+    app.include_router(time_entries.router, prefix="/api")
+    app.include_router(messages.router, prefix="/api")
+    app.include_router(activity.router, prefix="/api")
+    app.include_router(announcements.router, prefix="/api")
+    app.include_router(reports.router, prefix="/api")
+    app.include_router(onboarding.router, prefix="/api")
+    app.include_router(surveys.router, prefix="/api")
+    app.include_router(email_templates.router, prefix="/api")
+    app.include_router(push.router, prefix="/api")
+    app.include_router(integrations.router, prefix="/api")
 
     return app
 

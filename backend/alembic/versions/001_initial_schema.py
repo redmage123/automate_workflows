@@ -34,22 +34,38 @@ def upgrade() -> None:
     """
     # Create enum type for user roles
     # WHY: PostgreSQL ENUMs provide type safety at the database level
-    op.execute("CREATE TYPE userrole AS ENUM ('ADMIN', 'CLIENT')")
+    # Check if type exists first to handle cases where SQLAlchemy auto-creates the type
+    op.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'userrole') THEN
+                CREATE TYPE userrole AS ENUM ('ADMIN', 'CLIENT');
+            END IF;
+        END$$;
+    """)
 
     # Create users table
+    # WHY: Using String type instead of Enum to avoid automatic enum creation by SQLAlchemy
+    # The enum type is created above, and we cast the column appropriately
     op.create_table(
         'users',
         sa.Column('id', sa.Integer(), nullable=False),
         sa.Column('name', sa.String(length=255), nullable=False),
         sa.Column('email', sa.String(length=255), nullable=False),
         sa.Column('hashed_password', sa.String(length=255), nullable=True),
-        sa.Column('role', sa.Enum('ADMIN', 'CLIENT', name='userrole', create_type=False), nullable=False, server_default='CLIENT'),
+        sa.Column('role', sa.String(length=50), nullable=False, server_default='CLIENT'),
         sa.Column('org_id', sa.Integer(), nullable=False),
         sa.Column('is_active', sa.Boolean(), nullable=False, server_default='true'),
         sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
         sa.Column('updated_at', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
         sa.PrimaryKeyConstraint('id')
     )
+
+    # Alter the role column to use the enum type
+    # First drop the default, change type, then re-add default
+    op.execute("ALTER TABLE users ALTER COLUMN role DROP DEFAULT")
+    op.execute("ALTER TABLE users ALTER COLUMN role TYPE userrole USING role::userrole")
+    op.execute("ALTER TABLE users ALTER COLUMN role SET DEFAULT 'CLIENT'::userrole")
 
     # Create indexes
     # WHY: These indexes optimize common query patterns

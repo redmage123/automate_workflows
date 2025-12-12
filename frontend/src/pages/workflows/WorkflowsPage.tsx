@@ -20,6 +20,8 @@ import {
   updateInstanceStatus,
   deleteInstance,
   triggerExecution,
+  getEnvironments,
+  getN8nEditorUrl,
 } from '../../services/workflows';
 import type { WorkflowStatus, WorkflowInstanceListParams } from '../../types';
 import { WORKFLOW_STATUS_CONFIG } from '../../types/workflow';
@@ -52,6 +54,13 @@ export default function WorkflowsPage() {
   const [statusFilter, setStatusFilter] = useState<WorkflowStatus | ''>('');
   const [page, setPage] = useState(0);
   const pageSize = 10;
+  const [isOpeningN8n, setIsOpeningN8n] = useState(false);
+
+  // Fetch n8n environments to enable "Design in n8n" button
+  const { data: environmentsData } = useQuery({
+    queryKey: ['n8n-environments'],
+    queryFn: () => getEnvironments({ active_only: true, limit: 1 }),
+  });
 
   // Build query params
   const queryParams: WorkflowInstanceListParams = useMemo(
@@ -117,6 +126,27 @@ export default function WorkflowsPage() {
     executeMutation.mutate(id);
   };
 
+  const handleOpenN8nEditor = async () => {
+    const activeEnv = environmentsData?.items?.[0];
+    if (!activeEnv) {
+      alert('No active n8n environment configured. Please set up an n8n environment first.');
+      return;
+    }
+
+    setIsOpeningN8n(true);
+    try {
+      const result = await getN8nEditorUrl(activeEnv.id);
+      // Open n8n editor in a new tab
+      window.open(result.editor_url, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      alert('Failed to get n8n editor URL. Please check your n8n environment configuration.');
+    } finally {
+      setIsOpeningN8n(false);
+    }
+  };
+
+  const hasActiveEnvironment = (environmentsData?.items?.length ?? 0) > 0;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -128,26 +158,72 @@ export default function WorkflowsPage() {
           </p>
         </div>
         {isAdmin && (
-          <Link
-            to="/workflows/new"
-            className="btn-primary inline-flex items-center"
-          >
-            <svg
-              className="w-4 h-4 mr-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
+          <div className="flex gap-2">
+            <Link
+              to="/workflows/ai"
+              className="btn-secondary inline-flex items-center"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-            New Workflow
-          </Link>
+              <svg
+                className="w-4 h-4 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                />
+              </svg>
+              Create with AI
+            </Link>
+            {hasActiveEnvironment && (
+              <button
+                onClick={handleOpenN8nEditor}
+                disabled={isOpeningN8n}
+                className="btn-secondary inline-flex items-center"
+                title="Open n8n visual workflow editor"
+              >
+                <svg
+                  className="w-4 h-4 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"
+                  />
+                </svg>
+                {isOpeningN8n ? 'Opening...' : 'Design in n8n'}
+              </button>
+            )}
+            <Link
+              to="/workflows/new"
+              className="btn-primary inline-flex items-center"
+            >
+              <svg
+                className="w-4 h-4 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              New Workflow
+            </Link>
+          </div>
         )}
       </div>
 

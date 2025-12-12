@@ -41,6 +41,7 @@ from app.models.base import Base
 if TYPE_CHECKING:
     from app.models.organization import Organization
     from app.models.project import Project
+    from app.models.user import User
 
 
 # ============================================================================
@@ -253,8 +254,15 @@ class WorkflowInstance(Base):
 
     # Instance details
     name: Mapped[str] = mapped_column(String(255), nullable=False)
+    # WHY: create_type=False because enum types are created in migrations
+    # WHY: values_callable ensures the enum value (lowercase) is used, not the name (UPPERCASE)
     status: Mapped[WorkflowStatus] = mapped_column(
-        SQLEnum(WorkflowStatus, name="workflowstatus"),
+        SQLEnum(
+            WorkflowStatus,
+            name="workflowstatus",
+            create_type=False,
+            values_callable=lambda enum: [e.value for e in enum],
+        ),
         default=WorkflowStatus.DRAFT,
         nullable=False,
     )
@@ -290,6 +298,9 @@ class WorkflowInstance(Base):
     )
     execution_logs: Mapped[List["ExecutionLog"]] = relationship(
         "ExecutionLog", back_populates="workflow_instance", cascade="all, delete-orphan"
+    )
+    versions: Mapped[List["WorkflowVersion"]] = relationship(
+        "WorkflowVersion", back_populates="workflow_instance", cascade="all, delete-orphan"
     )
 
     # Indexes for common queries
@@ -342,6 +353,78 @@ class WorkflowInstance(Base):
 # ============================================================================
 
 
+# ============================================================================
+# Workflow Version Model
+# ============================================================================
+
+
+class WorkflowVersion(Base):
+    """
+    Version history for workflows.
+
+    WHAT: Tracks all versions of a workflow with change descriptions.
+
+    WHY: Enables rollback, audit trail, and understanding of workflow evolution.
+    Critical for production workflows where changes must be traceable.
+
+    HOW: Each time a workflow's JSON definition changes, a new version record
+    is created. The is_current flag marks the active version.
+    """
+
+    __tablename__ = "workflow_versions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    workflow_instance_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("workflow_instances.id"), nullable=False
+    )
+    version_number: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    # Workflow definition snapshot
+    workflow_json: Mapped[dict] = mapped_column(JSON, nullable=False)
+
+    # Change tracking
+    change_description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_by: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id"), nullable=False
+    )
+
+    # Current version flag
+    is_current: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False
+    )
+
+    # Relationships
+    workflow_instance: Mapped["WorkflowInstance"] = relationship(
+        "WorkflowInstance", back_populates="versions"
+    )
+    creator: Mapped["User"] = relationship("User")
+
+    # Constraints and indexes
+    __table_args__ = (
+        UniqueConstraint(
+            "workflow_instance_id", "version_number", name="uq_workflow_version"
+        ),
+        Index("ix_workflow_versions_instance_id", "workflow_instance_id"),
+        Index("ix_workflow_versions_is_current", "is_current"),
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<WorkflowVersion(id={self.id}, "
+            f"workflow_instance_id={self.workflow_instance_id}, "
+            f"version={self.version_number}, "
+            f"is_current={self.is_current})>"
+        )
+
+
+# ============================================================================
+# Execution Log Model
+# ============================================================================
+
+
 class ExecutionLog(Base):
     """
     Record of workflow execution.
@@ -368,8 +451,15 @@ class ExecutionLog(Base):
     n8n_execution_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
 
     # Status
+    # WHY: create_type=False because enum types are created in migrations
+    # WHY: values_callable ensures the enum value (lowercase) is used, not the name (UPPERCASE)
     status: Mapped[ExecutionStatus] = mapped_column(
-        SQLEnum(ExecutionStatus, name="executionstatus"),
+        SQLEnum(
+            ExecutionStatus,
+            name="executionstatus",
+            create_type=False,
+            values_callable=lambda enum: [e.value for e in enum],
+        ),
         default=ExecutionStatus.RUNNING,
         nullable=False,
     )

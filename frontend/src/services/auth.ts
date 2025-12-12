@@ -110,7 +110,7 @@ export const getCurrentUser = async (): Promise<User> => {
  * @throws ApiError if not authenticated
  */
 export const getCurrentOrganization = async (): Promise<Organization> => {
-  return apiGet<Organization>('/api/orgs/me');
+  return apiGet<Organization>('/api/organizations/me');
 };
 
 /**

@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#4f46e5">
+  <title>Offline - Automation Platform</title>
+  <style>
+    /**
+     * Offline Page Styles
+     *
+     * WHAT: Minimal styling for offline fallback page.
+     *
+     * WHY: Works without external CSS that might not be cached.
+     *
+     * HOW: Inline styles ensure page displays correctly when offline.
+     */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      color: #1f2937;
+    }
+
+    .container {
+      background: white;
+      border-radius: 16px;
+      padding: 48px;
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+
+    .icon {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 24px;
+      background: #fef3c7;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .icon svg {
+      width: 48px;
+      height: 48px;
+      color: #d97706;
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 12px;
+    }
+
+    p {
+      color: #6b7280;
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 16px;
+      background: #fef2f2;
+      border-radius: 8px;
+      margin-bottom: 24px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: #ef4444;
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .status-text {
+      font-size: 14px;
+      color: #991b1b;
+      font-weight: 500;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 14px 24px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      border: none;
+    }
+
+    .btn-primary {
+      background: #4f46e5;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #4338ca;
+    }
+
+    .btn-secondary {
+      background: #f3f4f6;
+      color: #374151;
+    }
+
+    .btn-secondary:hover {
+      background: #e5e7eb;
+    }
+
+    .tips {
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .tips h2 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 12px;
+    }
+
+    .tips ul {
+      list-style: none;
+      text-align: left;
+    }
+
+    .tips li {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 14px;
+      color: #6b7280;
+      margin-bottom: 8px;
+    }
+
+    .tips li::before {
+      content: "•";
+      color: #9ca3af;
+    }
+
+    .cached-info {
+      margin-top: 24px;
+      padding: 16px;
+      background: #f0fdf4;
+      border-radius: 8px;
+      display: none;
+    }
+
+    .cached-info.has-cache {
+      display: block;
+    }
+
+    .cached-info p {
+      font-size: 14px;
+      color: #166534;
+      margin-bottom: 12px;
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 32px 24px;
+      }
+
+      h1 {
+        font-size: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Offline Icon -->
+    <div class="icon">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414" />
+      </svg>
+    </div>
+
+    <h1>You're Offline</h1>
+    <p>It looks like you've lost your internet connection. Some features may not be available until you're back online.</p>
+
+    <!-- Connection Status -->
+    <div class="status">
+      <div class="status-dot"></div>
+      <span class="status-text">No internet connection</span>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="actions">
+      <button class="btn btn-primary" onclick="tryReconnect()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+        Try Again
+      </button>
+      <a href="/" class="btn btn-secondary">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+        </svg>
+        Go to Dashboard
+      </a>
+    </div>
+
+    <!-- Cached Content Info -->
+    <div class="cached-info" id="cachedInfo">
+      <p>Some content is available offline from your last visit.</p>
+      <a href="/dashboard" class="btn btn-secondary">View Cached Dashboard</a>
+    </div>
+
+    <!-- Tips Section -->
+    <div class="tips">
+      <h2>While you wait</h2>
+      <ul>
+        <li>Check your Wi-Fi or mobile data connection</li>
+        <li>Move closer to your router</li>
+        <li>Try disabling airplane mode</li>
+        <li>Restart your browser or device</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * Offline Page JavaScript
+     *
+     * WHAT: Handles reconnection and cache checking.
+     *
+     * WHY: Improves UX by:
+     * - Auto-reconnecting when online
+     * - Showing cached content options
+     * - Providing retry functionality
+     */
+
+    // Check if we have cached content
+    async function checkCachedContent() {
+      if ('caches' in window) {
+        try {
+          const cache = await caches.open('automation-static-v1');
+          const keys = await cache.keys();
+          if (keys.length > 0) {
+            document.getElementById('cachedInfo').classList.add('has-cache');
+          }
+        } catch (e) {
+          console.log('Could not check cache:', e);
+        }
+      }
+    }
+
+    // Try to reconnect
+    function tryReconnect() {
+      window.location.reload();
+    }
+
+    // Auto-reconnect when online
+    window.addEventListener('online', () => {
+      window.location.reload();
+    });
+
+    // Update status when connection changes
+    window.addEventListener('offline', () => {
+      document.querySelector('.status-text').textContent = 'No internet connection';
+      document.querySelector('.status-dot').style.background = '#ef4444';
+    });
+
+    // Check cache on load
+    checkCachedContent();
+
+    // Periodically check connection
+    setInterval(() => {
+      if (navigator.onLine) {
+        window.location.reload();
+      }
+    }, 5000);
+  </script>
+</body>
+</html>

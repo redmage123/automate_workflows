@@ -1,7 +1,7 @@
 """Add notification preferences table.
 
-Revision ID: 008
-Revises: 007_add_workflow_tables
+Revision ID: 008b
+Revises: 008a
 Create Date: 2025-12-11
 
 WHAT: Creates notification_preferences table for user notification settings.
@@ -17,8 +17,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = "008"
-down_revision = "007"
+revision = "008b"
+down_revision = "008a"
 branch_labels = None
 depends_on = None
 

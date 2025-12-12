@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Guide - Automation Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f7fa;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        nav.toc {
+            background: white;
+            border-radius: 8px;
+            padding: 20px 30px;
+            margin: 20px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        nav.toc h2 {
+            color: #1d4ed8;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        nav.toc ul {
+            list-style: none;
+            columns: 2;
+        }
+
+        @media (max-width: 768px) {
+            nav.toc ul {
+                columns: 1;
+            }
+        }
+
+        nav.toc a {
+            color: #3b82f6;
+            text-decoration: none;
+            display: block;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        nav.toc a:hover {
+            color: #1d4ed8;
+        }
+
+        section {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            margin: 20px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        section h2 {
+            color: #1d4ed8;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        section h3 {
+            color: #374151;
+            font-size: 1.3rem;
+            margin: 25px 0 15px 0;
+        }
+
+        section h4 {
+            color: #6b7280;
+            font-size: 1.1rem;
+            margin: 15px 0 10px 0;
+        }
+
+        p {
+            margin-bottom: 15px;
+        }
+
+        ul, ol {
+            margin-left: 25px;
+            margin-bottom: 15px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        .feature-box {
+            background: #f0f9ff;
+            border-left: 4px solid #3b82f6;
+            padding: 15px 20px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .tip-box {
+            background: #ecfdf5;
+            border-left: 4px solid #10b981;
+            padding: 15px 20px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .tip-box::before {
+            content: "Tip: ";
+            font-weight: bold;
+            color: #059669;
+        }
+
+        .warning-box {
+            background: #fff7ed;
+            border-left: 4px solid #f59e0b;
+            padding: 15px 20px;
+            margin: 15px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .warning-box::before {
+            content: "Note: ";
+            font-weight: bold;
+            color: #d97706;
+        }
+
+        .steps {
+            counter-reset: step-counter;
+            list-style: none;
+            margin-left: 0;
+        }
+
+        .steps li {
+            counter-increment: step-counter;
+            padding: 15px 15px 15px 60px;
+            position: relative;
+            background: #f9fafb;
+            margin-bottom: 10px;
+            border-radius: 8px;
+        }
+
+        .steps li::before {
+            content: counter(step-counter);
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #3b82f6;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        th {
+            background: #f3f4f6;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        tr:hover {
+            background: #f9fafb;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .badge-blue {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .badge-green {
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        .badge-yellow {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .badge-red {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .keyboard-shortcut {
+            display: inline-block;
+            background: #e5e7eb;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6b7280;
+        }
+
+        .back-to-top {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #3b82f6;
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+
+        .back-to-top:hover {
+            background: #1d4ed8;
+        }
+    </style>
+</head>
+<body>
+    <header id="top">
+        <div class="container">
+            <h1>Automation Platform User Guide</h1>
+            <p>Complete guide to managing your automation services, projects, and workflows</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <nav class="toc">
+            <h2>Table of Contents</h2>
+            <ul>
+                <li><a href="#getting-started">1. Getting Started</a></li>
+                <li><a href="#dashboard">2. Dashboard Overview</a></li>
+                <li><a href="#projects">3. Managing Projects</a></li>
+                <li><a href="#proposals">4. Creating Proposals</a></li>
+                <li><a href="#invoices">5. Invoices & Billing</a></li>
+                <li><a href="#workflows">6. Workflow Automation</a></li>
+                <li><a href="#tickets">7. Support Tickets</a></li>
+                <li><a href="#onboarding">8. Client Onboarding</a></li>
+                <li><a href="#settings">9. Organization Settings</a></li>
+                <li><a href="#admin">10. Admin Features</a></li>
+                <li><a href="#faq">11. FAQ & Troubleshooting</a></li>
+            </ul>
+        </nav>
+
+        <!-- Getting Started -->
+        <section id="getting-started">
+            <h2>1. Getting Started</h2>
+
+            <h3>Creating Your Account</h3>
+            <p>To get started with the Automation Platform, you'll need to create an account:</p>
+            <ol class="steps">
+                <li>Navigate to the registration page by clicking "Create a new account" on the login page</li>
+                <li>Enter your full name, organization name, and email address</li>
+                <li>Create a secure password (must include uppercase, lowercase, numbers, and special characters)</li>
+                <li>Click "Create account" to complete registration</li>
+                <li>Check your email for verification (if required by your organization)</li>
+            </ol>
+
+            <h3>Logging In</h3>
+            <ol class="steps">
+                <li>Go to the login page</li>
+                <li>Enter your registered email address</li>
+                <li>Enter your password</li>
+                <li>Click "Sign in" to access your dashboard</li>
+            </ol>
+
+            <div class="tip-box">
+                If you forget your password, click "Forgot your password?" on the login page to receive a reset link via email.
+            </div>
+
+            <h3>Understanding User Roles</h3>
+            <table>
+                <tr>
+                    <th>Role</th>
+                    <th>Permissions</th>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-blue">Client</span></td>
+                    <td>View projects, proposals, and invoices. Create and manage support tickets. View workflows.</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-green">Admin</span></td>
+                    <td>Full access to all features including creating/editing projects, managing users, viewing audit logs, and accessing analytics.</td>
+                </tr>
+            </table>
+        </section>
+
+        <!-- Dashboard -->
+        <section id="dashboard">
+            <h2>2. Dashboard Overview</h2>
+
+            <p>The Dashboard is your central hub for monitoring all activities in your organization.</p>
+
+            <h3>Quick Stats</h3>
+            <p>At the top of your dashboard, you'll see four key metrics:</p>
+            <ul>
+                <li><strong>Active Projects</strong> - Number of projects currently in progress</li>
+                <li><strong>Pending Proposals</strong> - Proposals awaiting client approval</li>
+                <li><strong>Open Tickets</strong> - Support tickets requiring attention</li>
+                <li><strong>Active Workflows</strong> - Automation workflows currently running</li>
+            </ul>
+
+            <h3>Recent Activity</h3>
+            <p>The dashboard displays recent activity across all areas:</p>
+            <ul>
+                <li><strong>Recent Projects</strong> - Quick access to your latest projects</li>
+                <li><strong>Recent Activity Feed</strong> - Timeline of recent actions and updates</li>
+                <li><strong>Pending Proposals</strong> - Proposals that need review</li>
+                <li><strong>Open Tickets</strong> - Tickets awaiting response</li>
+            </ul>
+
+            <div class="tip-box">
+                Click on any item in the dashboard to navigate directly to its detail page.
+            </div>
+        </section>
+
+        <!-- Projects -->
+        <section id="projects">
+            <h2>3. Managing Projects</h2>
+
+            <h3>Viewing Projects</h3>
+            <p>The Projects page displays all your automation projects in a sortable, filterable list.</p>
+
+            <h4>Filtering Options</h4>
+            <ul>
+                <li><strong>Search</strong> - Find projects by name or description (enter at least 3 characters)</li>
+                <li><strong>Status Filter</strong> - Filter by: Planned, In Progress, Completed, On Hold, Cancelled</li>
+                <li><strong>Priority Filter</strong> - Filter by: Low, Medium, High, Urgent</li>
+                <li><strong>Active Only Toggle</strong> - Show only non-completed projects</li>
+            </ul>
+
+            <h3>Creating a New Project</h3>
+            <p>Admin users can create new projects:</p>
+            <ol class="steps">
+                <li>Click the "New Project" button in the top right corner</li>
+                <li>Enter the project name (required)</li>
+                <li>Add a description of the project scope</li>
+                <li>Select the priority level</li>
+                <li>Enter estimated hours for the project</li>
+                <li>Set start and due dates</li>
+                <li>Click "Create Project" to save</li>
+            </ol>
+
+            <h3>Project Statuses</h3>
+            <table>
+                <tr>
+                    <th>Status</th>
+                    <th>Description</th>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-blue">Planned</span></td>
+                    <td>Project is scheduled but work hasn't started</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-yellow">In Progress</span></td>
+                    <td>Project is actively being worked on</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-green">Completed</span></td>
+                    <td>Project has been finished successfully</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-yellow">On Hold</span></td>
+                    <td>Project is temporarily paused</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-red">Cancelled</span></td>
+                    <td>Project has been cancelled</td>
+                </tr>
+            </table>
+
+            <div class="warning-box">
+                Projects with past due dates will be highlighted to indicate they may need attention.
+            </div>
+        </section>
+
+        <!-- Proposals -->
+        <section id="proposals">
+            <h2>4. Creating Proposals</h2>
+
+            <h3>Understanding Proposals</h3>
+            <p>Proposals are formal documents outlining project scope, deliverables, and pricing for client approval.</p>
+
+            <h3>Creating a New Proposal</h3>
+            <ol class="steps">
+                <li>Navigate to the Proposals page and click "New Proposal"</li>
+                <li>Enter a descriptive title for the proposal</li>
+                <li>Write the scope of work description</li>
+                <li>Add line items with descriptions, quantities, and unit prices</li>
+                <li>Apply any discount percentage if applicable</li>
+                <li>Set the tax percentage for your region</li>
+                <li>Set the "Valid Until" date for the proposal</li>
+                <li>Add client-facing notes and internal notes as needed</li>
+                <li>Include terms and conditions</li>
+                <li>Click "Create Proposal" to save</li>
+            </ol>
+
+            <h3>Line Items</h3>
+            <div class="feature-box">
+                <p>Each proposal can have multiple line items. The system automatically calculates:</p>
+                <ul>
+                    <li>Line item amount (quantity x unit price)</li>
+                    <li>Subtotal of all line items</li>
+                    <li>Discount amount</li>
+                    <li>Tax amount</li>
+                    <li>Final total</li>
+                </ul>
+            </div>
+
+            <h3>Proposal Statuses</h3>
+            <table>
+                <tr>
+                    <th>Status</th>
+                    <th>Description</th>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-blue">Draft</span></td>
+                    <td>Proposal is being prepared and not yet sent</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-yellow">Sent</span></td>
+                    <td>Proposal has been sent to the client</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-green">Accepted</span></td>
+                    <td>Client has approved the proposal</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-red">Rejected</span></td>
+                    <td>Client has declined the proposal</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-yellow">Expired</span></td>
+                    <td>Proposal validity date has passed</td>
+                </tr>
+            </table>
+
+            <h3>Revising Proposals</h3>
+            <p>If a proposal needs changes, you can create a revision instead of editing the original. This maintains a history of all versions.</p>
+        </section>
+
+        <!-- Invoices -->
+        <section id="invoices">
+            <h2>5. Invoices & Billing</h2>
+
+            <h3>Invoice Overview</h3>
+            <p>The Invoices page shows all billing documents with key financial metrics:</p>
+            <ul>
+                <li><strong>Total Invoices</strong> - Count of all invoices</li>
+                <li><strong>Total Outstanding</strong> - Sum of unpaid amounts</li>
+                <li><strong>Total Paid</strong> - Sum of received payments</li>
+                <li><strong>Overdue Count</strong> - Number of past-due invoices</li>
+            </ul>
+
+            <h3>Invoice Statuses</h3>
+            <table>
+                <tr>
+                    <th>Status</th>
+                    <th>Description</th>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-blue">Draft</span></td>
+                    <td>Invoice is being prepared</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-yellow">Sent</span></td>
+                    <td>Invoice has been sent to client</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-yellow">Pending</span></td>
+                    <td>Awaiting payment</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-green">Paid</span></td>
+                    <td>Payment received in full</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-red">Overdue</span></td>
+                    <td>Payment past due date</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-red">Cancelled</span></td>
+                    <td>Invoice has been cancelled</td>
+                </tr>
+            </table>
+
+            <div class="warning-box">
+                Overdue invoices are highlighted in red and should be followed up promptly.
+            </div>
+        </section>
+
+        <!-- Workflows -->
+        <section id="workflows">
+            <h2>6. Workflow Automation</h2>
+
+            <h3>What are Workflows?</h3>
+            <p>Workflows are automated sequences of actions that streamline your business processes. They can be triggered manually or automatically based on events.</p>
+
+            <h3>Managing Workflows</h3>
+            <ul>
+                <li><strong>View Workflows</strong> - See all workflow instances with their current status</li>
+                <li><strong>Execute</strong> - Manually trigger a workflow to run</li>
+                <li><strong>Pause/Resume</strong> - Temporarily stop or restart a workflow</li>
+                <li><strong>View History</strong> - See past executions and their results</li>
+            </ul>
+
+            <h3>Workflow Statuses</h3>
+            <table>
+                <tr>
+                    <th>Status</th>
+                    <th>Description</th>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-blue">Draft</span></td>
+                    <td>Workflow is being configured</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-green">Active</span></td>
+                    <td>Workflow is running and operational</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-yellow">Paused</span></td>
+                    <td>Workflow is temporarily stopped</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-red">Error</span></td>
+                    <td>Workflow encountered an issue</td>
+                </tr>
+            </table>
+
+            <h3>Workflow Templates</h3>
+            <p>Browse pre-built templates for common automation scenarios, then customize them for your needs.</p>
+        </section>
+
+        <!-- Tickets -->
+        <section id="tickets">
+            <h2>7. Support Tickets</h2>
+
+            <h3>Creating a Support Ticket</h3>
+            <ol class="steps">
+                <li>Navigate to the Tickets page and click "New Ticket"</li>
+                <li>Enter a clear, descriptive subject line</li>
+                <li>Provide detailed description of your issue or request (minimum 10 characters)</li>
+                <li>Select the appropriate category (Technical, Billing, Feature Request, Other)</li>
+                <li>Set the priority level based on urgency</li>
+                <li>Click "Submit Ticket" to create</li>
+            </ol>
+
+            <h3>Ticket Priorities</h3>
+            <table>
+                <tr>
+                    <th>Priority</th>
+                    <th>Use When</th>
+                    <th>Expected Response</th>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-blue">Low</span></td>
+                    <td>General questions or minor issues</td>
+                    <td>Within 48 hours</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-yellow">Medium</span></td>
+                    <td>Issues affecting productivity</td>
+                    <td>Within 24 hours</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-yellow">High</span></td>
+                    <td>Significant business impact</td>
+                    <td>Within 8 hours</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-red">Urgent</span></td>
+                    <td>Critical system failures</td>
+                    <td>Within 2 hours</td>
+                </tr>
+            </table>
+
+            <h3>SLA Tracking</h3>
+            <div class="feature-box">
+                <p>Each ticket has Service Level Agreement (SLA) tracking:</p>
+                <ul>
+                    <li><strong>Response SLA</strong> - Time until first response</li>
+                    <li><strong>Resolution SLA</strong> - Time until issue is resolved</li>
+                    <li>SLA status is color-coded: green (on track), yellow (at risk), red (breached)</li>
+                </ul>
+            </div>
+
+            <h3>Ticket Statuses</h3>
+            <table>
+                <tr>
+                    <th>Status</th>
+                    <th>Description</th>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-blue">Open</span></td>
+                    <td>Ticket has been created and is awaiting attention</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-yellow">In Progress</span></td>
+                    <td>Team is actively working on the issue</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-yellow">Waiting</span></td>
+                    <td>Awaiting response from client</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-green">Resolved</span></td>
+                    <td>Issue has been addressed</td>
+                </tr>
+                <tr>
+                    <td><span class="badge badge-green">Closed</span></td>
+                    <td>Ticket is complete and closed</td>
+                </tr>
+            </table>
+        </section>
+
+        <!-- Onboarding -->
+        <section id="onboarding">
+            <h2>8. Client Onboarding</h2>
+
+            <p>The Client Onboarding wizard streamlines the process of setting up new projects with proposals.</p>
+
+            <h3>Step 1: Project Details</h3>
+            <p>Enter the basic project information:</p>
+            <ul>
+                <li>Project name (required)</li>
+                <li>Description of the project</li>
+                <li>Priority level</li>
+                <li>Estimated hours</li>
+                <li>Start and due dates</li>
+            </ul>
+
+            <h3>Step 2: Proposal Details</h3>
+            <p>Create the proposal with pricing:</p>
+            <ul>
+                <li>Proposal title</li>
+                <li>Scope of work description</li>
+                <li>Line items with pricing</li>
+                <li>Discount and tax settings</li>
+                <li>Validity period</li>
+            </ul>
+
+            <h3>Step 3: Review & Confirm</h3>
+            <p>Review all details before finalizing:</p>
+            <ul>
+                <li>Project summary</li>
+                <li>Proposal summary with totals</li>
+                <li>Client-facing and internal notes</li>
+                <li>Terms and conditions</li>
+            </ul>
+
+            <div class="tip-box">
+                The onboarding wizard creates both the project and proposal in one streamlined flow, saving time and ensuring consistency.
+            </div>
+        </section>
+
+        <!-- Settings -->
+        <section id="settings">
+            <h2>9. Organization Settings</h2>
+
+            <h3>Organization Profile</h3>
+            <ul>
+                <li><strong>Organization Name</strong> - Your company or team name</li>
+                <li><strong>Logo URL</strong> - URL to your organization's logo image</li>
+            </ul>
+
+            <h3>Preferences</h3>
+            <ul>
+                <li><strong>Timezone</strong> - Select your local timezone for accurate date/time display</li>
+                <li><strong>Notification Email</strong> - Email address for system notifications</li>
+            </ul>
+
+            <h3>Organization Information</h3>
+            <p>View-only information about your organization:</p>
+            <ul>
+                <li>Organization ID</li>
+                <li>Account creation date</li>
+                <li>Current billing status</li>
+            </ul>
+
+            <div class="warning-box">
+                Changes to settings are not saved automatically. Click "Save Changes" to apply your updates.
+            </div>
+        </section>
+
+        <!-- Admin Features -->
+        <section id="admin">
+            <h2>10. Admin Features</h2>
+
+            <p>Admin users have access to additional management and monitoring tools.</p>
+
+            <h3>Admin Dashboard</h3>
+            <p>The admin dashboard provides platform-wide metrics:</p>
+            <ul>
+                <li>Total users and organizations</li>
+                <li>Revenue totals and month-to-date figures</li>
+                <li>Active projects and open tickets</li>
+                <li>Quick links to management tools</li>
+            </ul>
+
+            <h3>User Management</h3>
+            <p>Manage users across all organizations:</p>
+            <ul>
+                <li>View all users</li>
+                <li>Create new user accounts</li>
+                <li>Edit user details and roles</li>
+                <li>Deactivate or delete users</li>
+            </ul>
+
+            <h3>Organization Management</h3>
+            <p>Manage organizations on the platform:</p>
+            <ul>
+                <li>View all organizations</li>
+                <li>Create new organizations</li>
+                <li>Edit organization settings</li>
+                <li>View organization metrics</li>
+            </ul>
+
+            <h3>Audit Logs</h3>
+            <p>Track all system activity for security and compliance:</p>
+            <ul>
+                <li>Filter by action type</li>
+                <li>Filter by user</li>
+                <li>Filter by date range</li>
+                <li>View detailed activity records</li>
+            </ul>
+
+            <h3>Analytics</h3>
+            <p>Access detailed analytics on:</p>
+            <ul>
+                <li>Project metrics and trends</li>
+                <li>Revenue tracking</li>
+                <li>User activity patterns</li>
+                <li>Workflow execution statistics</li>
+                <li>Ticket resolution metrics</li>
+            </ul>
+        </section>
+
+        <!-- FAQ -->
+        <section id="faq">
+            <h2>11. FAQ & Troubleshooting</h2>
+
+            <h3>Common Questions</h3>
+
+            <h4>How do I reset my password?</h4>
+            <p>Click "Forgot your password?" on the login page, enter your email, and follow the instructions in the reset email.</p>
+
+            <h4>Why can't I create a new project?</h4>
+            <p>Only Admin users can create projects. If you need this access, contact your organization administrator.</p>
+
+            <h4>How do I change my notification preferences?</h4>
+            <p>Go to Settings and update the notification email field. You can also adjust timezone settings there.</p>
+
+            <h4>What happens when a proposal expires?</h4>
+            <p>Expired proposals cannot be accepted by clients. You can create a revision with a new validity date if needed.</p>
+
+            <h4>How are SLA times calculated?</h4>
+            <p>SLA times are based on ticket priority. Response SLA measures time to first response, while resolution SLA measures time to close the ticket.</p>
+
+            <h3>Getting Help</h3>
+            <p>If you encounter issues not covered in this guide:</p>
+            <ol>
+                <li>Create a support ticket through the Tickets page</li>
+                <li>Include detailed information about the issue</li>
+                <li>Attach any relevant screenshots if possible</li>
+                <li>Our support team will respond based on the ticket priority</li>
+            </ol>
+
+            <div class="tip-box">
+                For urgent issues, set your ticket priority to "Urgent" to receive faster response times.
+            </div>
+        </section>
+    </div>
+
+    <footer>
+        <p>Automation Platform User Guide &copy; 2024</p>
+        <p>For additional help, create a support ticket or contact your administrator.</p>
+    </footer>
+
+    <a href="#top" class="back-to-top">Back to Top</a>
+</body>
+</html>

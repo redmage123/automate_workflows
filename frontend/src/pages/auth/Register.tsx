@@ -5,40 +5,49 @@
  *
  * WHY: Self-service onboarding for new clients with organization creation.
  *
- * HOW: Form with email, password, and organization name fields.
- * Creates both user and organization in a single transaction.
+ * HOW: Form with email, password, and organization name fields using
+ * react-hook-form and zod validation. Creates both user and organization
+ * in a single transaction.
  */
 
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuthStore } from '../../store';
+import { registerSchema, type RegisterFormData } from '../../utils/validation';
+import { FormField, Input, PasswordInput, FormError, SubmitButton } from '../../components/forms';
 
 function Register() {
-  const { register, isLoading, error, setError } = useAuthStore();
-
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [organizationName, setOrganizationName] = useState('');
+  const { register: registerUser, isLoading, error, setError } = useAuthStore();
   const [success, setSuccess] = useState(false);
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<RegisterFormData>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      name: '',
+      organization_name: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+    },
+  });
+
+  const onSubmit = async (data: RegisterFormData) => {
     setError(null);
 
-    // Client-side validation
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters');
-      return;
-    }
-
     try {
-      await register({ email, password, organization_name: organizationName });
+      await registerUser({
+        name: data.name,
+        email: data.email,
+        password: data.password,
+        password_confirm: data.confirmPassword,
+        organization_name: data.organization_name,
+      });
       setSuccess(true);
     } catch {
       // Error is handled by the store
@@ -56,6 +65,7 @@ function Register() {
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
+                aria-hidden="true"
               >
                 <path
                   strokeLinecap="round"
@@ -104,140 +114,96 @@ function Register() {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white px-4 py-8 shadow sm:rounded-lg sm:px-10">
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            {error && (
-              <div
-                className="rounded-md bg-red-50 p-4"
-                role="alert"
-                aria-live="polite"
-              >
-                <p className="text-sm text-red-700">{error}</p>
-              </div>
-            )}
+          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+            <FormError error={error} />
 
-            <div>
-              <label
-                htmlFor="organization"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Organization name
-              </label>
-              <div className="mt-1">
-                <input
-                  id="organization"
-                  name="organization"
-                  type="text"
-                  required
-                  value={organizationName}
-                  onChange={(e) => setOrganizationName(e.target.value)}
-                  className="input"
-                  placeholder="Your company name"
-                />
-              </div>
-            </div>
+            <FormField
+              label="Full name"
+              name="name"
+              required
+              error={errors.name}
+            >
+              <Input
+                id="name"
+                type="text"
+                autoComplete="name"
+                placeholder="John Doe"
+                error={!!errors.name}
+                errorId="name-error"
+                {...register('name')}
+              />
+            </FormField>
 
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Email address
-              </label>
-              <div className="mt-1">
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="input"
-                />
-              </div>
-            </div>
+            <FormField
+              label="Organization name"
+              name="organization_name"
+              required
+              error={errors.organization_name}
+            >
+              <Input
+                id="organization_name"
+                type="text"
+                placeholder="Your company name"
+                error={!!errors.organization_name}
+                errorId="organization_name-error"
+                {...register('organization_name')}
+              />
+            </FormField>
 
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Password
-              </label>
-              <div className="mt-1">
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  minLength={8}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="input"
-                />
-              </div>
-              <p className="mt-1 text-xs text-gray-500">
-                Must be at least 8 characters
-              </p>
-            </div>
+            <FormField
+              label="Email address"
+              name="email"
+              required
+              error={errors.email}
+            >
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                error={!!errors.email}
+                errorId="email-error"
+                {...register('email')}
+              />
+            </FormField>
 
-            <div>
-              <label
-                htmlFor="confirmPassword"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Confirm password
-              </label>
-              <div className="mt-1">
-                <input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="input"
-                />
-              </div>
-            </div>
+            <FormField
+              label="Password"
+              name="password"
+              required
+              error={errors.password}
+              helpText="Must be at least 8 characters with uppercase, lowercase, and number"
+            >
+              <PasswordInput
+                id="password"
+                autoComplete="new-password"
+                error={!!errors.password}
+                errorId="password-error"
+                {...register('password')}
+              />
+            </FormField>
 
-            <div>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="btn-primary w-full"
-              >
-                {isLoading ? (
-                  <span className="flex items-center justify-center">
-                    <svg
-                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
-                    </svg>
-                    Creating account...
-                  </span>
-                ) : (
-                  'Create account'
-                )}
-              </button>
-            </div>
+            <FormField
+              label="Confirm password"
+              name="confirmPassword"
+              required
+              error={errors.confirmPassword}
+            >
+              <PasswordInput
+                id="confirmPassword"
+                autoComplete="new-password"
+                error={!!errors.confirmPassword}
+                errorId="confirmPassword-error"
+                {...register('confirmPassword')}
+              />
+            </FormField>
+
+            <SubmitButton
+              isLoading={isLoading}
+              loadingText="Creating account..."
+              fullWidth
+            >
+              Create account
+            </SubmitButton>
 
             <p className="text-center text-xs text-gray-500">
               By creating an account, you agree to our{' '}

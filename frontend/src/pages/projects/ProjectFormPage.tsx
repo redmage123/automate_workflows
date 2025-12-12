@@ -8,42 +8,34 @@
  * - Consistent form experience
  * - Proper validation and error handling
  *
- * HOW: Detects mode from URL (new vs :id/edit) and fetches existing data for edit.
+ * HOW: Uses react-hook-form with zod validation. Detects mode from URL
+ * (new vs :id/edit) and fetches existing data for edit.
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { getProject, createProject, updateProject } from '../../services/projects';
+import { projectSchema, type ProjectFormData } from '../../utils/validation';
+import { FormField, Input, Textarea, Select, FormError, SubmitButton } from '../../components/forms';
 import type { ProjectCreateRequest, ProjectUpdateRequest, ProjectPriority } from '../../types';
 import { PROJECT_PRIORITY_CONFIG } from '../../types/project';
 
 /**
- * Form state type for managing project form data
+ * ProjectFormPage Component
+ *
+ * WHAT: Unified form for creating and editing projects.
+ *
+ * WHY: Single component reduces duplication and ensures consistent behavior.
+ *
+ * HOW:
+ * 1. Detects mode from URL parameters (new vs :id/edit)
+ * 2. Fetches existing project data for edit mode
+ * 3. Validates form with zod before submission
+ * 4. Navigates to project detail on success
  */
-interface FormState {
-  name: string;
-  description: string;
-  priority: ProjectPriority;
-  estimatedHours: string;
-  actualHours: string;
-  startDate: string;
-  dueDate: string;
-}
-
-/**
- * Default form values for new projects
- */
-const defaultFormState: FormState = {
-  name: '',
-  description: '',
-  priority: 'medium',
-  estimatedHours: '',
-  actualHours: '',
-  startDate: '',
-  dueDate: '',
-};
-
 export default function ProjectFormPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -59,8 +51,18 @@ export default function ProjectFormPage() {
   });
 
   // Derive initial form values from existing project
-  const initialFormState = useMemo<FormState>(() => {
-    if (!existingProject) return defaultFormState;
+  const defaultValues = useMemo<ProjectFormData>(() => {
+    if (!existingProject) {
+      return {
+        name: '',
+        description: '',
+        priority: 'medium',
+        estimatedHours: '',
+        actualHours: '',
+        startDate: '',
+        dueDate: '',
+      };
+    }
     return {
       name: existingProject.name,
       description: existingProject.description || '',
@@ -72,21 +74,24 @@ export default function ProjectFormPage() {
     };
   }, [existingProject]);
 
-  // Form state - track initialized project ID to avoid re-initialization
-  const [formState, setFormState] = useState<FormState>(initialFormState);
-  const [initializedProjectId, setInitializedProjectId] = useState<number | null>(null);
-  const [error, setError] = useState('');
+  // React Hook Form setup with zod validation
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<ProjectFormData>({
+    resolver: zodResolver(projectSchema),
+    defaultValues,
+  });
 
-  // Update form state helper
-  const updateForm = (updates: Partial<FormState>) => {
-    setFormState((prev) => ({ ...prev, ...updates }));
-  };
+  // Reset form when default values change (project loaded for edit)
+  useEffect(() => {
+    reset(defaultValues);
+  }, [defaultValues, reset]);
 
-  // Re-initialize form when project loads (only once per project)
-  if (isEditMode && existingProject && initializedProjectId !== existingProject.id) {
-    setInitializedProjectId(existingProject.id);
-    setFormState(initialFormState);
-  }
+  // Form-level error state for API errors
+  const [apiError, setApiError] = useState<string | null>(null);
 
   // Create mutation
   const createMutation = useMutation({
@@ -96,7 +101,7 @@ export default function ProjectFormPage() {
       navigate(`/projects/${project.id}`);
     },
     onError: (err: Error) => {
-      setError(err.message || 'Failed to create project');
+      setApiError(err.message || 'Failed to create project');
     },
   });
 
@@ -109,46 +114,42 @@ export default function ProjectFormPage() {
       navigate(`/projects/${projectId}`);
     },
     onError: (err: Error) => {
-      setError(err.message || 'Failed to update project');
+      setApiError(err.message || 'Failed to update project');
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-
-    // Validation
-    if (!formState.name.trim()) {
-      setError('Project name is required');
-      return;
-    }
+  /**
+   * Form submission handler
+   *
+   * WHAT: Validates form and submits to API.
+   *
+   * WHY: Zod validation ensures data integrity before API call.
+   */
+  const onSubmit = (data: ProjectFormData) => {
+    setApiError(null);
 
     // Build request data
-    const data: ProjectCreateRequest | ProjectUpdateRequest = {
-      name: formState.name.trim(),
-      description: formState.description.trim() || null,
-      priority: formState.priority,
-      estimated_hours: formState.estimatedHours ? parseFloat(formState.estimatedHours) : null,
-      start_date: formState.startDate ? new Date(formState.startDate).toISOString() : null,
-      due_date: formState.dueDate ? new Date(formState.dueDate).toISOString() : null,
+    const requestData: ProjectCreateRequest | ProjectUpdateRequest = {
+      name: data.name.trim(),
+      description: data.description?.trim() || null,
+      priority: data.priority as ProjectPriority,
+      estimated_hours: data.estimatedHours ? parseFloat(data.estimatedHours) : null,
+      start_date: data.startDate ? new Date(data.startDate).toISOString() : null,
+      due_date: data.dueDate ? new Date(data.dueDate).toISOString() : null,
     };
 
     // Add actual_hours only for edit mode
     if (isEditMode) {
-      (data as ProjectUpdateRequest).actual_hours = formState.actualHours ? parseFloat(formState.actualHours) : null;
+      (requestData as ProjectUpdateRequest).actual_hours = data.actualHours
+        ? parseFloat(data.actualHours)
+        : null;
     }
 
-    // Date validation
-    if (formState.startDate && formState.dueDate && new Date(formState.dueDate) < new Date(formState.startDate)) {
-      setError('Due date must be after start date');
-      return;
-    }
-
-    // Submit
+    // Submit based on mode
     if (isEditMode) {
-      updateMutation.mutate(data as ProjectUpdateRequest);
+      updateMutation.mutate(requestData as ProjectUpdateRequest);
     } else {
-      createMutation.mutate(data as ProjectCreateRequest);
+      createMutation.mutate(requestData as ProjectCreateRequest);
     }
   };
 
@@ -179,126 +180,131 @@ export default function ProjectFormPage() {
       </div>
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="card space-y-6">
-        {error && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700" role="alert">
-            {error}
-          </div>
-        )}
+      <form onSubmit={handleSubmit(onSubmit)} className="card space-y-6">
+        {/* API Error Display */}
+        <FormError error={apiError} />
 
         {/* Name */}
-        <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-            Project Name <span className="text-red-500">*</span>
-          </label>
-          <input
+        <FormField
+          label="Project Name"
+          name="name"
+          required
+          error={errors.name}
+        >
+          <Input
             id="name"
             type="text"
-            className="input w-full"
-            value={formState.name}
-            onChange={(e) => updateForm({ name: e.target.value })}
-            required
             maxLength={255}
             placeholder="e.g., Website Automation Project"
+            error={!!errors.name}
+            errorId="name-error"
+            {...register('name')}
           />
-        </div>
+        </FormField>
 
         {/* Description */}
-        <div>
-          <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-            Description
-          </label>
-          <textarea
+        <FormField
+          label="Description"
+          name="description"
+          error={errors.description}
+        >
+          <Textarea
             id="description"
-            className="input w-full min-h-[120px]"
-            value={formState.description}
-            onChange={(e) => updateForm({ description: e.target.value })}
+            rows={5}
             maxLength={5000}
             placeholder="Describe the project scope and objectives..."
+            error={!!errors.description}
+            errorId="description-error"
+            {...register('description')}
           />
-        </div>
+        </FormField>
 
         {/* Priority */}
-        <div>
-          <label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-1">
-            Priority
-          </label>
-          <select
+        <FormField
+          label="Priority"
+          name="priority"
+          error={errors.priority}
+        >
+          <Select
             id="priority"
-            className="input w-full"
-            value={formState.priority}
-            onChange={(e) => updateForm({ priority: e.target.value as ProjectPriority })}
+            error={!!errors.priority}
+            errorId="priority-error"
+            {...register('priority')}
           >
             {Object.entries(PROJECT_PRIORITY_CONFIG).map(([value, config]) => (
               <option key={value} value={value}>
                 {config.label}
               </option>
             ))}
-          </select>
-        </div>
+          </Select>
+        </FormField>
 
         {/* Hours */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="estimated-hours" className="block text-sm font-medium text-gray-700 mb-1">
-              Estimated Hours
-            </label>
-            <input
-              id="estimated-hours"
+          <FormField
+            label="Estimated Hours"
+            name="estimatedHours"
+            error={errors.estimatedHours}
+          >
+            <Input
+              id="estimatedHours"
               type="number"
-              className="input w-full"
-              value={formState.estimatedHours}
-              onChange={(e) => updateForm({ estimatedHours: e.target.value })}
               min="0"
               step="0.5"
               placeholder="e.g., 40"
+              error={!!errors.estimatedHours}
+              errorId="estimatedHours-error"
+              {...register('estimatedHours')}
             />
-          </div>
+          </FormField>
           {isEditMode && (
-            <div>
-              <label htmlFor="actual-hours" className="block text-sm font-medium text-gray-700 mb-1">
-                Actual Hours
-              </label>
-              <input
-                id="actual-hours"
+            <FormField
+              label="Actual Hours"
+              name="actualHours"
+              error={errors.actualHours}
+            >
+              <Input
+                id="actualHours"
                 type="number"
-                className="input w-full"
-                value={formState.actualHours}
-                onChange={(e) => updateForm({ actualHours: e.target.value })}
                 min="0"
                 step="0.5"
                 placeholder="e.g., 25"
+                error={!!errors.actualHours}
+                errorId="actualHours-error"
+                {...register('actualHours')}
               />
-            </div>
+            </FormField>
           )}
         </div>
 
         {/* Dates */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="start-date" className="block text-sm font-medium text-gray-700 mb-1">
-              Start Date
-            </label>
-            <input
-              id="start-date"
+          <FormField
+            label="Start Date"
+            name="startDate"
+            error={errors.startDate}
+          >
+            <Input
+              id="startDate"
               type="date"
-              className="input w-full"
-              value={formState.startDate}
-              onChange={(e) => updateForm({ startDate: e.target.value })}
+              error={!!errors.startDate}
+              errorId="startDate-error"
+              {...register('startDate')}
             />
-          </div>
-          <div>
-            <label htmlFor="due-date" className="block text-sm font-medium text-gray-700 mb-1">
-              Due Date
-            </label>
-            <input
-              id="due-date"
+          </FormField>
+          <FormField
+            label="Due Date"
+            name="dueDate"
+            error={errors.dueDate}
+          >
+            <Input
+              id="dueDate"
               type="date"
-              className="input w-full"
-              value={formState.dueDate}
-              onChange={(e) => updateForm({ dueDate: e.target.value })}
+              error={!!errors.dueDate}
+              errorId="dueDate-error"
+              {...register('dueDate')}
             />
-          </div>
+          </FormField>
         </div>
 
         {/* Actions */}
@@ -306,9 +312,12 @@ export default function ProjectFormPage() {
           <Link to={isEditMode ? `/projects/${projectId}` : '/projects'} className="btn-secondary">
             Cancel
           </Link>
-          <button type="submit" className="btn-primary" disabled={isSubmitting}>
-            {isSubmitting ? 'Saving...' : isEditMode ? 'Save Changes' : 'Create Project'}
-          </button>
+          <SubmitButton
+            isLoading={isSubmitting}
+            loadingText="Saving..."
+          >
+            {isEditMode ? 'Save Changes' : 'Create Project'}
+          </SubmitButton>
         </div>
       </form>
     </div>
